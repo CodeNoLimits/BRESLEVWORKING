@@ -1,0 +1,14 @@
+{
+  "name": "breslevworking-frontend",
+  "version": "1.0.0",
+  "description": "Breslev Torah Frontend with Proxy",
+  "main": "simple-server.js",
+  "scripts": {
+    "start": "node simple-server.js",
+    "dev": "node simple-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6"
+  }
+}
