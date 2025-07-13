@@ -6,14 +6,16 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "npm install --production",
+    "build": "echo 'Static files optimized for Netlify'",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false",
-    "deploy:vercel": "vercel --prod",
+    "deploy:netlify": "netlify deploy --prod",
     "deploy:render": "echo 'Deploy via GitHub integration'",
-    "health": "curl -f http://localhost:5000/api/health || exit 1"
+    "health": "curl -f http://localhost:5000/api/health || exit 1",
+    "netlify:build": "echo 'Frontend ready for Netlify deployment'",
+    "netlify:dev": "netlify dev"
   },
   "engines": {
     "node": ">=18.0.0",

@@ -37,10 +37,13 @@
 
 ## 🚀 Déploiement Production
 
-### Frontend (Vercel)
+### Frontend (Netlify) - PRÉFÉRÉ
 ```bash
-# Déploiement automatique depuis GitHub
-https://le-compagnon-du-coeur.vercel.app
+# Déploiement automatique depuis GitHub  
+https://le-compagnon-du-coeur.netlify.app
+
+# Deploy en 3 clics sur app.netlify.com
+# Configuration optimisée dans netlify.toml
 ```
 
 ### Backend (Render)

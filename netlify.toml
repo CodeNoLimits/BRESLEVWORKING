@@ -1,9 +1,23 @@
-# 🚀 Configuration Netlify pour Le Compagnon du Cœur
-# Alternative à Vercel pour déploiement frontend
+# 🚀 Configuration Netlify OPTIMISÉE - Le Compagnon du Cœur
+# Déploiement frontend préféré par David
 
 [build]
   publish = "client"
-  command = "echo 'Static files ready'"
+  command = "npm run build"
+  
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
 
 [build.environment]
   NODE_ENV = "production"

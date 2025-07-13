@@ -1,0 +1,20 @@
+# 🚀 Redirections Netlify - Le Compagnon du Cœur
+# Fichier _redirects pour optimisation Netlify
+
+# API Proxy vers Render Backend
+/api/*  https://breslov-api.onrender.com/api/:splat  200!
+
+# Health Check direct
+/health  https://breslov-api.onrender.com/api/health  200!
+
+# SPA Fallback - Toutes les routes vers index.html
+/*  /index.html  200
+
+# Redirections SEO 
+/livres/*  /index.html?book=:splat  200
+/recherche/*  /index.html?q=:splat  200
+/chat/*  /index.html?mode=chat  200
+
+# Redirections d'erreur personnalisées
+/404  /index.html  404
+/error  /index.html  500
