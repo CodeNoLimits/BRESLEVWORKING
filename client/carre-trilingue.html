@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🕊️ Le Compagnon du Cœur - Layout Carrés Trilingue</title>
+    
+    <!-- 🚀 FORCER LE RAFRAÎCHISSEMENT DU CACHE -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -111,27 +116,60 @@
             const [selectedVoice, setSelectedVoice] = useState(null);
             
             const recognitionRef = useRef(null);
-            // Livres testés et fonctionnels sur Sefaria (mis à jour juillet 2025)
-            const availableBooks = [
-                'Likutei Moharan', 
-                'Chayei Moharan', 
-                'Sichot HaRan',
-                'Shivchei HaRan',
-                'Sippurei Maasiyot'
-            ];
+            // 🚀 LIVRES CHARGÉS DYNAMIQUEMENT DEPUIS L'API (14 livres disponibles)
+            let availableBooks = [];
             
-            // Livres avec problèmes identifiés (à éviter)
-            const problematicBooks = [
-                'Likutei Tefilot', // "Book not found in Breslov collection"
-                'Sefer HaMiddot',  // "Book not found in Breslov collection" 
-                'Alim LiTerufah',  // Non testé - potentiellement problématique
-                'Kitzur Likutei Moharan', // Non testé
-                'Likutei Etzot'    // Non testé
-            ];
+            // 📚 FONCTION DE CHARGEMENT DYNAMIQUE DES LIVRES
+            async function loadBooksFromAPI() {
+                try {
+                    console.log('🔄 Chargement des livres depuis l\'API...');
+                    const response = await fetch('/api/multi-book/books');
+                    const data = await response.json();
+                    
+                    // Extraire les titres français
+                    availableBooks = data.books.map(book => book.titleFrench || book.title);
+                    
+                    console.log(`✅ ${availableBooks.length} livres Breslov chargés:`, availableBooks);
+                    
+                    // Mettre à jour le sélecteur de livres
+                    updateBookSelector();
+                    
+                    // Mettre à jour le titre de la page pour confirmer
+                    document.title = `Le Compagnon du Cœur - ${availableBooks.length} Livres Breslov`;
+                    
+                } catch (error) {
+                    console.error('❌ Erreur chargement livres:', error);
+                    // Fallback sur liste minimale si erreur API
+                    availableBooks = [
+                        'Les Enseignements de Rabbi Nahman',
+                        'Chayei Moharan (Vie de Rabbi Nahman)', 
+                        'Les Contes de Rabbi Nahman',
+                        'Recueil de Prières',
+                        'La Vie de Rabbi Nahman'
+                    ];
+                    updateBookSelector();
+                }
+            }
+            
+            // 🔄 FONCTION POUR METTRE À JOUR LE SÉLECTEUR
+            function updateBookSelector() {
+                const bookSelector = document.getElementById('bookSelector');
+                if (bookSelector) {
+                    bookSelector.innerHTML = '<option value="">Sélectionner un livre Breslov</option>';
+                    availableBooks.forEach(book => {
+                        const option = document.createElement('option');
+                        option.value = book;
+                        option.textContent = book;
+                        bookSelector.appendChild(option);
+                    });
+                    console.log(`✅ Sélecteur mis à jour avec ${availableBooks.length} livres`);
+                }
+            }
 
             // === INITIALISATION ===
             useEffect(() => {
                 console.log('🕊️ Layout Carrés Trilingue - Initialisation...');
+                loadBooksFromAPI(); // 🚀 CHARGER LES 14 LIVRES AU DÉMARRAGE
                 initializeTTS();
                 loadSefariaText();
                 
