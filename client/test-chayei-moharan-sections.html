@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Test Systématique Chayei Moharan - Toutes Sections</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .success { background-color: #16a34a; }
+        .error { background-color: #dc2626; }
+        .warning { background-color: #ea580c; }
+        .loading { background-color: #3b82f6; animation: pulse 2s infinite; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-6">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center">🔍 Test Systématique - Chayei Moharan</h1>
+        
+        <div class="mb-6 text-center">
+            <button id="startTest" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded font-bold">
+                🚀 Démarrer Test Complet (Sections 1-20)
+            </button>
+            <div id="progress" class="mt-4 text-gray-400"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="results">
+            <!-- Les résultats apparaîtront ici -->
+        </div>
+
+        <div class="mt-8 p-6 bg-gray-800 rounded">
+            <h3 class="text-xl font-bold mb-4">📊 Rapport Final</h3>
+            <div id="finalReport" class="text-gray-300">
+                Cliquez sur "Démarrer Test" pour analyser toutes les sections...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+        let currentSection = 1;
+        const maxSections = 20;
+
+        document.getElementById('startTest').onclick = startCompleteTest;
+
+        async function startCompleteTest() {
+            console.log('🔍 Début test systématique Chayei Moharan');
+            
+            testResults = [];
+            currentSection = 1;
+            
+            document.getElementById('startTest').disabled = true;
+            document.getElementById('startTest').textContent = '⏳ Test en cours...';
+            document.getElementById('results').innerHTML = '';
+            
+            // Tester toutes les sections une par une
+            for (let section = 1; section <= maxSections; section++) {
+                await testSection(section);
+                updateProgress(section, maxSections);
+                
+                // Délai entre les tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            generateFinalReport();
+            
+            document.getElementById('startTest').disabled = false;
+            document.getElementById('startTest').textContent = '✅ Test Terminé - Relancer';
+        }
+
+        async function testSection(sectionNumber) {
+            const startTime = Date.now();
+            
+            // Créer carte de test
+            const testCard = createTestCard(sectionNumber);
+            document.getElementById('results').appendChild(testCard);
+            
+            try {
+                console.log(`🔍 Test section ${sectionNumber}...`);
+                
+                const response = await fetch(`/api/sefaria-direct/Chayei%20Moharan/${sectionNumber}`);
+                const data = await response.json();
+                
+                const duration = Date.now() - startTime;
+                
+                if (data.success && data.hebrewText && data.englishText) {
+                    const hebrewCount = Array.isArray(data.hebrewText) ? data.hebrewText.length : 1;
+                    const englishCount = Array.isArray(data.englishText) ? data.englishText.length : 1;
+                    
+                    // Vérifier qualité du contenu
+                    const hebrewSample = Array.isArray(data.hebrewText) ? data.hebrewText[0] : data.hebrewText;
+                    const englishSample = Array.isArray(data.englishText) ? data.englishText[0] : data.englishText;
+                    
+                    const hasHebrewChars = /[\u0590-\u05FF]/.test(hebrewSample);
+                    const hasEnglishContent = englishSample && englishSample.length > 20;
+                    
+                    if (hasHebrewChars && hasEnglishContent) {
+                        updateTestCard(testCard, 'success', {
+                            status: '✅ SUCCÈS',
+                            details: `Hébreu: ${hebrewCount} segments, Anglais: ${englishCount} segments`,
+                            duration: `${duration}ms`,
+                            quality: 'Contenu complet'
+                        });
+                        
+                        testResults.push({
+                            section: sectionNumber,
+                            status: 'success',
+                            hebrewCount,
+                            englishCount,
+                            duration,
+                            hasHebrewChars,
+                            hasEnglishContent
+                        });
+                    } else {
+                        updateTestCard(testCard, 'warning', {
+                            status: '⚠️ PARTIEL',
+                            details: `Hébreu: ${hasHebrewChars ? 'OK' : 'MANQUANT'}, Anglais: ${hasEnglishContent ? 'OK' : 'MANQUANT'}`,
+                            duration: `${duration}ms`,
+                            quality: 'Contenu incomplet'
+                        });
+                        
+                        testResults.push({
+                            section: sectionNumber,
+                            status: 'partial',
+                            hebrewCount,
+                            englishCount,
+                            duration,
+                            hasHebrewChars,
+                            hasEnglishContent
+                        });
+                    }
+                } else {
+                    updateTestCard(testCard, 'error', {
+                        status: '❌ ÉCHEC',
+                        details: data.error || 'Réponse invalide',
+                        duration: `${duration}ms`,
+                        quality: 'Aucun contenu'
+                    });
+                    
+                    testResults.push({
+                        section: sectionNumber,
+                        status: 'error',
+                        error: data.error || 'Réponse invalide',
+                        duration
+                    });
+                }
+                
+            } catch (error) {
+                const duration = Date.now() - startTime;
+                
+                updateTestCard(testCard, 'error', {
+                    status: '❌ ERREUR',
+                    details: error.message,
+                    duration: `${duration}ms`,
+                    quality: 'Connexion échouée'
+                });
+                
+                testResults.push({
+                    section: sectionNumber,
+                    status: 'error',
+                    error: error.message,
+                    duration
+                });
+            }
+        }
+
+        function createTestCard(sectionNumber) {
+            const card = document.createElement('div');
+            card.className = 'p-4 bg-gray-700 rounded border loading';
+            card.innerHTML = `
+                <div class="font-bold text-center mb-2">Section ${sectionNumber}</div>
+                <div class="text-center text-gray-300">⏳ Test en cours...</div>
+            `;
+            return card;
+        }
+
+        function updateTestCard(card, status, details) {
+            card.className = `p-4 rounded border ${status}`;
+            card.innerHTML = `
+                <div class="font-bold text-center mb-2">${details.status}</div>
+                <div class="text-sm space-y-1">
+                    <div>📄 ${details.details}</div>
+                    <div>⏱️ ${details.duration}</div>
+                    <div>💎 ${details.quality}</div>
+                </div>
+            `;
+        }
+
+        function updateProgress(current, total) {
+            const percentage = Math.round((current / total) * 100);
+            document.getElementById('progress').textContent = 
+                `Progression: ${current}/${total} sections testées (${percentage}%)`;
+        }
+
+        function generateFinalReport() {
+            const successful = testResults.filter(r => r.status === 'success');
+            const partial = testResults.filter(r => r.status === 'partial');
+            const failed = testResults.filter(r => r.status === 'error');
+            
+            const avgDuration = testResults.reduce((sum, r) => sum + r.duration, 0) / testResults.length;
+            
+            const report = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="p-4 bg-green-800 rounded">
+                            <div class="text-2xl font-bold">${successful.length}</div>
+                            <div>✅ Sections Complètes</div>
+                        </div>
+                        <div class="p-4 bg-orange-800 rounded">
+                            <div class="text-2xl font-bold">${partial.length}</div>
+                            <div>⚠️ Sections Partielles</div>
+                        </div>
+                        <div class="p-4 bg-red-800 rounded">
+                            <div class="text-2xl font-bold">${failed.length}</div>
+                            <div>❌ Sections Échouées</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center text-lg">
+                        📊 Taux de réussite: <strong>${Math.round((successful.length / testResults.length) * 100)}%</strong>
+                        <br>⏱️ Temps moyen: <strong>${Math.round(avgDuration)}ms</strong>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-bold text-green-400 mb-2">✅ Sections Fonctionnelles:</h4>
+                            <div class="text-sm">${successful.map(r => `Section ${r.section}`).join(', ') || 'Aucune'}</div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-red-400 mb-2">❌ Sections Problématiques:</h4>
+                            <div class="text-sm">${[...partial, ...failed].map(r => `Section ${r.section}`).join(', ') || 'Aucune'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-4 bg-blue-900 rounded">
+                        <h4 class="font-bold mb-2">🔧 Code pour fullTextExtractor.ts:</h4>
+                        <pre class="text-sm overflow-x-auto">
+sections: [
+${successful.map(r => `  { ref: 'Chayei Moharan ${r.section}', title: 'Biography Part ${r.section}', number: '${r.section}' }`).join(',\n')}
+]</pre>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('finalReport').innerHTML = report;
+            
+            console.log('📊 RAPPORT FINAL:', {
+                total: testResults.length,
+                successful: successful.length,
+                partial: partial.length,
+                failed: failed.length,
+                successfulSections: successful.map(r => r.section),
+                problematicSections: [...partial, ...failed].map(r => r.section)
+            });
+        }
+    </script>
+</body>
+</html>

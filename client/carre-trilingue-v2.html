@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔮 Le Compagnon du Cœur - Interface Carrés Trilingue V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .hebrew-text { direction: rtl; text-align: right; font-family: 'David Libre', serif; }
+        .loading-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .gradient-bg { background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%); }
+        .ai-title-hover:hover { background: rgba(59, 130, 246, 0.1); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // COLLECTION BRESLOV ÉTENDUE - CHAYEI MOHARAN EN PRIORITÉ
+        const availableBooks = [
+            'Chayei Moharan', // FOCUS PRINCIPAL - sections 3,4,5 avec extracteur intelligent
+            'Likutei Moharan',
+            'Sichot HaRan',
+            'Shivchei HaRan',
+            'Sippurei Maasiyot',
+            'Likutei Tefilot',
+            'Sefer HaMiddot'
+        ];
+
+        function CarreTrilingueV2() {
+            // État principal
+            const [selectedBook, setSelectedBook] = useState('Chayei Moharan');
+            const [currentSection, setCurrentSection] = useState(3);
+            const [textData, setTextData] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [showEnglish, setShowEnglish] = useState(true);
+            
+            // NOUVEAUTÉ V2 : Menu déroulant avec titres IA
+            const [segmentTitles, setSegmentTitles] = useState([]);
+            const [selectedSegment, setSelectedSegment] = useState(0);
+            const [titlesLoading, setTitlesLoading] = useState(false);
+            const [showSegmentMenu, setShowSegmentMenu] = useState(false);
+            
+            // IA et vocal
+            const [aiResponse, setAiResponse] = useState('');
+            const [isListening, setIsListening] = useState(false);
+            const [isSpeaking, setIsSpeaking] = useState(false);
+            const [currentVoice, setCurrentVoice] = useState(null);
+            
+            // Traduction française progressive 
+            const [frenchTranslation, setFrenchTranslation] = useState('');
+            const [translationChunks, setTranslationChunks] = useState([]);
+            const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+
+            const recognitionRef = useRef(null);
+
+            // Configuration TTS optimisée
+            useEffect(() => {
+                console.log('🗣️ Initialisation TTS optimisée...');
+                
+                function initializeVoices() {
+                    const voices = speechSynthesis.getVoices();
+                    const frenchVoices = voices.filter(voice => 
+                        voice.lang.includes('fr') || voice.name.includes('Français') || voice.name.includes('French')
+                    );
+                    
+                    console.log('🇫🇷 Voix françaises trouvées:', frenchVoices.map(v => v.name));
+                    
+                    if (frenchVoices.length > 0) {
+                        const preferredVoice = frenchVoices.find(v => v.name.includes('Amélie')) || frenchVoices[0];
+                        setCurrentVoice(preferredVoice);
+                        console.log('🎵 Voix sélectionnée:', preferredVoice.name);
+                    }
+                }
+
+                if (speechSynthesis.getVoices().length !== 0) {
+                    initializeVoices();
+                } else {
+                    speechSynthesis.addEventListener('voiceschanged', initializeVoices);
+                }
+
+                return () => speechSynthesis.removeEventListener('voiceschanged', initializeVoices);
+            }, []);
+
+            // Configuration reconnaissance vocale
+            useEffect(() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognitionRef.current = new SpeechRecognition();
+                    recognitionRef.current.continuous = false;
+                    recognitionRef.current.interimResults = false;
+                    recognitionRef.current.lang = 'fr-FR';
+
+                    recognitionRef.current.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        console.log('🎤 Transcription:', transcript);
+                        setIsListening(false);
+                        
+                        // NOUVEAU : Envoi automatique (sans clic manuel)
+                        handleAiQuestion(transcript);
+                    };
+
+                    recognitionRef.current.onerror = (event) => {
+                        console.error('❌ Erreur reconnaissance vocale:', event.error);
+                        setIsListening(false);
+                    };
+
+                    recognitionRef.current.onend = () => {
+                        setIsListening(false);
+                    };
+                }
+            }, []);
+
+            // Charger le texte initial
+            useEffect(() => {
+                loadText();
+                loadSegmentTitles(); // NOUVEAU : Charger les titres IA
+            }, [selectedBook, currentSection]);
+
+            // Charger le texte depuis Sefaria
+            async function loadText() {
+                setLoading(true);
+                try {
+                    console.log(`[CarréTrilingue V2] Chargement: ${selectedBook} section ${currentSection}`);
+                    
+                    const response = await fetch(`/api/sefaria-direct/${encodeURIComponent(selectedBook)}/${currentSection}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        setTextData(data);
+                        setSelectedSegment(0); // Reset segment selection
+                        console.log(`✅ Texte chargé: ${data.totalSegments} segments anglais, ${data.hebrewSegments} segments hébreux`);
+                    } else {
+                        console.error('❌ Erreur chargement texte:', data.error);
+                        setTextData(null);
+                    }
+                } catch (error) {
+                    console.error('❌ Erreur réseau:', error);
+                    setTextData(null);
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            // NOUVEAU : Charger les titres IA pour la section
+            async function loadSegmentTitles() {
+                setTitlesLoading(true);
+                try {
+                    console.log(`🤖 Chargement titres IA pour ${selectedBook} section ${currentSection}`);
+                    
+                    const response = await fetch(`/api/segment-titles/${encodeURIComponent(selectedBook)}/${currentSection}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.titles.length > 0) {
+                        setSegmentTitles(data.titles);
+                        console.log(`✅ ${data.totalTitles} titres IA chargés`);
+                    } else {
+                        // Pas de titres existants - proposer de les générer
+                        setSegmentTitles([]);
+                        console.log('ℹ️ Aucun titre IA trouvé - génération disponible');
+                    }
+                } catch (error) {
+                    console.error('❌ Erreur chargement titres IA:', error);
+                    setSegmentTitles([]);
+                } finally {
+                    setTitlesLoading(false);
+                }
+            }
+
+            // NOUVEAU : Générer titres IA pour la section actuelle
+            async function generateSegmentTitles() {
+                setTitlesLoading(true);
+                try {
+                    console.log(`🤖 Génération titres IA pour ${selectedBook} section ${currentSection}`);
+                    
+                    const response = await fetch('/api/segment-titles/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            bookTitle: selectedBook,
+                            sectionNumber: currentSection
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        setSegmentTitles(data.titles);
+                        console.log(`✅ ${data.totalSegments} titres IA générés`);
+                    } else {
+                        console.error('❌ Erreur génération titres:', data.error);
+                    }
+                } catch (error) {
+                    console.error('❌ Erreur réseau génération titres:', error);
+                } finally {
+                    setTitlesLoading(false);
+                }
+            }
+
+            // Traduction française progressive (bouton Suite)
+            async function loadFrenchTranslation() {
+                if (!textData) return;
+
+                const currentSegment = textData.englishText[selectedSegment] || '';
+                const chunkSize = 200;
+                const chunks = [];
+                
+                for (let i = 0; i < currentSegment.length; i += chunkSize) {
+                    chunks.push(currentSegment.slice(i, i + chunkSize));
+                }
+                
+                setTranslationChunks(chunks);
+                setCurrentChunkIndex(0);
+                
+                if (chunks.length > 0) {
+                    await translateChunk(chunks[0], 0);
+                }
+            }
+
+            async function translateChunk(chunk, index) {
+                try {
+                    const response = await fetch('/api/gemini/quick', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: `Traduis ce passage spirituel en français élégant: "${chunk}"`
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (index === 0) {
+                        setFrenchTranslation(data.response);
+                    } else {
+                        setFrenchTranslation(prev => prev + ' ' + data.response);
+                    }
+                } catch (error) {
+                    console.error('❌ Erreur traduction:', error);
+                }
+            }
+
+            function nextTranslationChunk() {
+                if (currentChunkIndex + 1 < translationChunks.length) {
+                    const nextIndex = currentChunkIndex + 1;
+                    setCurrentChunkIndex(nextIndex);
+                    translateChunk(translationChunks[nextIndex], nextIndex);
+                }
+            }
+
+            // TTS INTERRUPTIBLE PAR LA PAROLE (comme ChatGPT vocal)
+            function speakText(text, options = {}) {
+                if (!currentVoice || !text) return;
+                
+                // Arrêter toute lecture en cours
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.voice = currentVoice;
+                utterance.rate = options.rate || 0.9;
+                utterance.pitch = options.pitch || 1.0;
+                utterance.volume = options.volume || 1.0;
+                
+                utterance.onstart = () => {
+                    setIsSpeaking(true);
+                    console.log('🔊 TTS démarré - Mode interruptible activé');
+                };
+                
+                utterance.onend = () => {
+                    setIsSpeaking(false);
+                    console.log('🔇 TTS terminé');
+                };
+                
+                utterance.onerror = () => {
+                    setIsSpeaking(false);
+                    console.log('❌ TTS erreur');
+                };
+                
+                // NOUVEAU : Surveillance interruption par microphone
+                const monitorInterruption = () => {
+                    if (!isSpeaking) return;
+                    
+                    // Détecter niveau audio du microphone
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        navigator.mediaDevices.getUserMedia({ audio: true })
+                            .then(stream => {
+                                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                                const source = audioContext.createMediaStreamSource(stream);
+                                const analyser = audioContext.createAnalyser();
+                                source.connect(analyser);
+                                
+                                analyser.fftSize = 256;
+                                const bufferLength = analyser.frequencyBinCount;
+                                const dataArray = new Uint8Array(bufferLength);
+                                
+                                const checkAudioLevel = () => {
+                                    if (!isSpeaking) {
+                                        stream.getTracks().forEach(track => track.stop());
+                                        return;
+                                    }
+                                    
+                                    analyser.getByteFrequencyData(dataArray);
+                                    
+                                    // Calculer niveau audio moyen
+                                    const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
+                                    
+                                    // Si détection de parole (seuil adaptatif)
+                                    if (average > 30) { // Seuil de détection
+                                        console.log('🎤 Interruption vocale détectée - Arrêt TTS');
+                                        speechSynthesis.cancel();
+                                        setIsSpeaking(false);
+                                        stream.getTracks().forEach(track => track.stop());
+                                        
+                                        // Auto-activation reconnaissance vocale après interruption
+                                        setTimeout(() => {
+                                            console.log('🎤 Démarrage automatique reconnaissance vocale');
+                                            startListening();
+                                        }, 300);
+                                        
+                                        return;
+                                    }
+                                    
+                                    requestAnimationFrame(checkAudioLevel);
+                                };
+                                
+                                checkAudioLevel();
+                            })
+                            .catch(err => {
+                                console.log('❌ Impossible d\'accéder au microphone pour interruption:', err);
+                            });
+                    }
+                };
+                
+                speechSynthesis.speak(utterance);
+                
+                // Activer surveillance interruption si option activée
+                if (options.interruptible !== false) {
+                    setTimeout(monitorInterruption, 500);
+                }
+            }
+
+            // Reconnaissance vocale
+            function startListening() {
+                if (!recognitionRef.current) return;
+                
+                speechSynthesis.cancel();
+                setIsListening(true);
+                recognitionRef.current.start();
+            }
+
+            // Question IA avec nouveau Smart Search
+            async function handleAiQuestion(question) {
+                setAiResponse('🤖 Recherche intelligente dans la collection Breslov...');
+                
+                try {
+                    const response = await fetch('/api/smart-search/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: question })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const finalResponse = `📚 Recherche dans: ${data.result.relevantBooks?.join(', ') || 'Collection Breslov'}\n\n${data.result.aiResponse}`;
+                        setAiResponse(finalResponse);
+                        
+                        // TTS automatique de la réponse
+                        setTimeout(() => speakText(data.result.aiResponse), 500);
+                    } else {
+                        setAiResponse('❌ Erreur lors de la recherche: ' + (data.error || 'Erreur inconnue'));
+                    }
+                } catch (error) {
+                    console.error('❌ Erreur Smart Search:', error);
+                    setAiResponse('❌ Erreur de connexion lors de la recherche.');
+                }
+            }
+
+            return (
+                <div className="min-h-screen gradient-bg p-4">
+                    <div className="max-w-7xl mx-auto">
+                        
+                        {/* HEADER */}
+                        <div className="mb-6 text-center">
+                            <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                                🔮 Le Compagnon du Cœur - V2 avec IA
+                            </h1>
+                            
+                            {/* Contrôles principaux */}
+                            <div className="flex flex-wrap gap-4 items-center justify-center mb-4">
+                                <select 
+                                    value={selectedBook} 
+                                    onChange={(e) => setSelectedBook(e.target.value)}
+                                    className="px-4 py-2 bg-gray-700 rounded border border-gray-600 text-white"
+                                >
+                                    {availableBooks.map(book => (
+                                        <option key={book} value={book}>{book}</option>
+                                    ))}
+                                </select>
+                                
+                                <input 
+                                    type="number" 
+                                    value={currentSection} 
+                                    onChange={(e) => setCurrentSection(parseInt(e.target.value) || 1)}
+                                    min="1" 
+                                    max="50"
+                                    className="px-3 py-2 bg-gray-700 rounded border border-gray-600 text-white w-20"
+                                />
+                                
+                                <button 
+                                    onClick={() => setShowEnglish(!showEnglish)}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
+                                >
+                                    {showEnglish ? '👁️ Masquer Anglais' : '👁️ Montrer Anglais'}
+                                </button>
+                                
+                                <button 
+                                    onClick={startListening}
+                                    disabled={isListening}
+                                    className={`px-4 py-2 rounded transition-colors ${
+                                        isListening ? 'bg-red-600' : 'bg-green-600 hover:bg-green-700'
+                                    }`}
+                                >
+                                    {isListening ? '🔴 Écoute...' : '🎤 Parler'}
+                                </button>
+                            </div>
+
+                            {/* NOUVEAU : Menu déroulant avec titres IA */}
+                            {segmentTitles.length > 0 && (
+                                <div className="mb-4">
+                                    <label className="block text-sm text-gray-300 mb-2">
+                                        🤖 Navigation par titres IA ({segmentTitles.length} segments):
+                                    </label>
+                                    <select 
+                                        value={selectedSegment} 
+                                        onChange={(e) => setSelectedSegment(parseInt(e.target.value))}
+                                        className="px-4 py-2 bg-gray-700 rounded border border-gray-600 text-white min-w-[300px]"
+                                    >
+                                        {segmentTitles.map((titleData, index) => (
+                                            <option key={index} value={titleData.segmentIndex}>
+                                                {titleData.segmentIndex + 1}. {titleData.title}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Bouton générer titres IA si pas encore fait */}
+                            {segmentTitles.length === 0 && !titlesLoading && textData && (
+                                <div className="mb-4">
+                                    <button 
+                                        onClick={generateSegmentTitles}
+                                        className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded transition-colors font-bold"
+                                    >
+                                        🤖 Générer titres IA pour cette section
+                                    </button>
+                                    <p className="text-sm text-gray-400 mt-2">
+                                        L'IA va analyser chaque segment et créer des titres descriptifs français
+                                    </p>
+                                </div>
+                            )}
+
+                            {titlesLoading && (
+                                <div className="mb-4 text-purple-400">
+                                    🤖 Génération de titres IA en cours...
+                                </div>
+                            )}
+                        </div>
+
+                        {loading && (
+                            <div className="text-center mb-6">
+                                <div className="loading-pulse text-blue-400">📖 Chargement du texte...</div>
+                            </div>
+                        )}
+
+                        {textData && (
+                            <div className="grid lg:grid-cols-2 gap-6 mb-8">
+                                
+                                {/* CARRÉ ANGLAIS (conditionnel) */}
+                                {showEnglish && (
+                                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                                        <h3 className="text-xl font-bold mb-4 text-blue-400">🇺🇸 English Text</h3>
+                                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                                            {textData.englishText && textData.englishText[selectedSegment] && (
+                                                <div className="text-gray-100 leading-relaxed">
+                                                    {textData.englishText[selectedSegment]}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <button 
+                                            onClick={() => speakText(textData.englishText?.[selectedSegment] || '')}
+                                            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                                        >
+                                            🔊 Écouter anglais
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* CARRÉ HÉBREU */}
+                                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                                    <h3 className="text-xl font-bold mb-4 text-yellow-400">🇮🇱 Hebrew Text</h3>
+                                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                                        {textData.hebrewText && textData.hebrewText[selectedSegment] && (
+                                            <div className="hebrew-text text-yellow-100 leading-relaxed text-lg">
+                                                {textData.hebrewText[selectedSegment]}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* CARRÉ FRANÇAIS (traduction progressive) */}
+                                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 lg:col-span-2">
+                                    <h3 className="text-xl font-bold mb-4 text-green-400">🇫🇷 Traduction Française</h3>
+                                    
+                                    {frenchTranslation ? (
+                                        <div className="space-y-4">
+                                            <div className="text-green-100 leading-relaxed">
+                                                {frenchTranslation}
+                                            </div>
+                                            
+                                            <div className="flex gap-3">
+                                                {currentChunkIndex + 1 < translationChunks.length && (
+                                                    <button 
+                                                        onClick={nextTranslationChunk}
+                                                        className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded transition-colors"
+                                                    >
+                                                        ➡️ Suite ({currentChunkIndex + 1}/{translationChunks.length})
+                                                    </button>
+                                                )}
+                                                
+                                                <button 
+                                                    onClick={() => speakText(frenchTranslation)}
+                                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded transition-colors"
+                                                >
+                                                    🔊 Écouter français
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="text-gray-400 text-center py-8">
+                                                Cliquez sur "Traduire" pour obtenir la traduction française progressive
+                                            </div>
+                                            <button 
+                                                onClick={loadFrenchTranslation}
+                                                className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 rounded transition-colors font-bold"
+                                            >
+                                                🇫🇷 Traduire en français
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* RÉPONSE IA */}
+                        {aiResponse && (
+                            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
+                                <h3 className="text-xl font-bold mb-4 text-purple-400">🤖 Réponse IA (Smart Search)</h3>
+                                <div className="text-gray-100 whitespace-pre-line leading-relaxed">
+                                    {aiResponse}
+                                </div>
+                                <button 
+                                    onClick={() => speakText(aiResponse)}
+                                    className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded transition-colors"
+                                >
+                                    🔊 Écouter réponse
+                                </button>
+                            </div>
+                        )}
+
+                        {/* FOOTER */}
+                        <div className="text-center text-gray-400 text-sm">
+                            <p>🔮 Le Compagnon du Cœur V2 - Interface Carrés Trilingue avec IA</p>
+                            <p>Nouveautés: Menu déroulant titres IA • Smart Search • Chat vocal automatique</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Rendu de l'application
+        ReactDOM.render(<CarreTrilingueV2 />, document.getElementById('root'));
+
+        console.log('🔮 Layout Carrés Trilingue V2 - Initialisation avec IA...');
+    </script>
+</body>
+</html>

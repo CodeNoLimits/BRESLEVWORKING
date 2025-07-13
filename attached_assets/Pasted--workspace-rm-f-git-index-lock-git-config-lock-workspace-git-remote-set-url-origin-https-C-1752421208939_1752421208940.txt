@@ -1,0 +1,42 @@
+~/workspace$ rm -f .git/index.lock .git/config.lock
+~/workspace$ git remote set-url origin https://CodeNoLimits:${GITHUB_TOKEN}@github.com/CodeNoLimits/BRESLEVWORKING.git
+~/workspace$ git checkout main
+M   .replit
+Already on 'main'
+Your branch and 'origin/main' have diverged,
+and have 103 and 1 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+~/workspace$ git add -A
+~/workspace$ git commit -m "Complete Breslov Torah spiritual companion application - Full project push"
+[main bedf2b7] Complete Breslov Torah spiritual companion application - Full project push
+ 4 files changed, 724 insertions(+), 5 deletions(-)
+ create mode 100644 BRESLEVWORKING/.github/workflows/blank.yml
+ create mode 100644 attached_assets/Pasted--Configure-Replit-environment-and-initial-database-schema-The-deployment-failed-with-the-following-e-1752420973514_1752420973515.txt
+ create mode 100644 attached_assets/image_1752420866398.png
+~/workspace$ git push --force origin main
+Enumerating objects: 1178, done.
+Counting objects: 100% (1176/1176), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (589/589), done.
+Writing objects: 100% (1170/1170), 43.66 MiB | 4.56 MiB/s, done.
+Total 1170 (delta 566), reused 1117 (delta 538), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (566/566), done.
+remote: fatal: did not receive expected object 11f952538d3fca6db14e67d68a2da0c54930c173
+error: remote unpack failed: index-pack failed
+To https://github.com/CodeNoLimits/BRESLEVWORKING.git
+ ! [remote rejected] main -> main (failed)
+error: failed to push some refs to 'https://github.com/CodeNoLimits/BRESLEVWORKING.git'
+~/workspace$ git push --force https://CodeNoLimits:${GITHUB_TOKEN}@github.com/CodeNoLimits/BRESLEVWORKING.git main
+Enumerating objects: 1178, done.
+Counting objects: 100% (1176/1176), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (589/589), done.
+Writing objects: 100% (1170/1170), 43.65 MiB | 5.95 MiB/s, done.
+Total 1170 (delta 568), reused 1116 (delta 538), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (568/568), done.
+remote: fatal: did not receive expected object 11f952538d3fca6db14e67d68a2da0c54930c173
+error: remote unpack failed: index-pack failed
+To https://github.com/CodeNoLimits/BRESLEVWORKING.git
+ ! [remote rejected] main -> main (failed)
+error: failed to push some refs to 'https://github.com/CodeNoLimits/BRESLEVWORKING.git'
+~/workspace$ 

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirection - Le Compagnon du Cœur</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #1a1a1a; color: white; text-align: center; }
+        .redirect { padding: 20px; background: #2a2a2a; border-radius: 10px; margin: 20px auto; max-width: 600px; }
+        a { color: #4CAF50; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="redirect">
+        <h1>🕊️ Le Compagnon du Cœur</h1>
+        <p>Redirection vers l'application principale...</p>
+        <p><a href="/client/index.html">Cliquez ici si la redirection ne fonctionne pas</a></p>
+    </div>
+    <script>
+        // Redirection automatique
+        setTimeout(() => {
+            window.location.href = '/client/index.html';
+        }, 2000);
+    </script>
+</body>
+</html>

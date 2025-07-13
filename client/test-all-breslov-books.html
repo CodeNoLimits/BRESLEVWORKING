@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Test Complet Collection Breslov</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .success { background-color: #16a34a; }
+        .error { background-color: #dc2626; }
+        .warning { background-color: #ea580c; }
+        .loading { background-color: #3b82f6; animation: pulse 2s infinite; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-6">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center">🔍 Test Complet Collection Breslov</h1>
+        
+        <div class="mb-6 text-center">
+            <button id="startTest" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded font-bold mr-4">
+                🚀 Tester Tous les Livres
+            </button>
+            <button id="testChayei" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded font-bold">
+                📖 Test Détaillé Chayei Moharan (sections 1-20)
+            </button>
+            <div id="progress" class="mt-4 text-gray-400"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="results">
+            <!-- Les résultats apparaîtront ici -->
+        </div>
+
+        <div class="mt-8 p-6 bg-gray-800 rounded">
+            <h3 class="text-xl font-bold mb-4">📊 Rapport Final</h3>
+            <div id="finalReport" class="text-gray-300">
+                Cliquez sur un bouton de test pour commencer l'analyse...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LISTE COMPLÈTE DES LIVRES BRESLOV À TESTER
+        const breslovBooks = [
+            'Likutei Moharan',
+            'Chayei Moharan', 
+            'Sichot HaRan',
+            'Shivchei HaRan',
+            'Sippurei Maasiyot',
+            'Likutei Tefilot',
+            'Sefer HaMiddot',
+            'Likutei Halachot',
+            'Likutei Eitzot',
+            // LIVRES ADDITIONNELS POTENTIELS
+            'Likutei Moharan Tinyana',
+            'Kitzur Likutei Moharan',
+            'Alim LiTerufah',
+            'Hishtapchut HaNefesh',
+            'Meshivat Nefesh',
+            'Shemot HaTzadikim'
+        ];
+
+        let testResults = [];
+
+        document.getElementById('startTest').onclick = testAllBooks;
+        document.getElementById('testChayei').onclick = testChayeiMoharanDetailed;
+
+        async function testAllBooks() {
+            console.log('🔍 Début test complet collection Breslov');
+            
+            testResults = [];
+            
+            document.getElementById('startTest').disabled = true;
+            document.getElementById('startTest').textContent = '⏳ Test en cours...';
+            document.getElementById('results').innerHTML = '';
+            
+            for (let i = 0; i < breslovBooks.length; i++) {
+                const book = breslovBooks[i];
+                await testBook(book);
+                updateProgress(i + 1, breslovBooks.length);
+                
+                // Délai entre les tests
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+            
+            generateBookReport();
+            
+            document.getElementById('startTest').disabled = false;
+            document.getElementById('startTest').textContent = '✅ Test Terminé - Relancer';
+        }
+
+        async function testBook(bookTitle) {
+            const startTime = Date.now();
+            
+            // Créer carte de test
+            const testCard = createBookTestCard(bookTitle);
+            document.getElementById('results').appendChild(testCard);
+            
+            // Tester plusieurs sections pour chaque livre
+            const sectionsToTest = [1, 2, 3];
+            let successfulSections = 0;
+            let totalContent = { hebrew: 0, english: 0 };
+            let errors = [];
+
+            for (const section of sectionsToTest) {
+                try {
+                    console.log(`🔍 Test ${bookTitle} section ${section}...`);
+                    
+                    const response = await fetch(`/api/sefaria-direct/${encodeURIComponent(bookTitle)}/${section}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.hebrewText && data.englishText) {
+                        const hebrewCount = Array.isArray(data.hebrewText) ? data.hebrewText.length : 1;
+                        const englishCount = Array.isArray(data.englishText) ? data.englishText.length : 1;
+                        
+                        // Vérifier qualité du contenu
+                        const hebrewSample = Array.isArray(data.hebrewText) ? data.hebrewText[0] : data.hebrewText;
+                        const englishSample = Array.isArray(data.englishText) ? data.englishText[0] : data.englishText;
+                        
+                        const hasHebrewChars = /[\u0590-\u05FF]/.test(hebrewSample);
+                        const hasEnglishContent = englishSample && englishSample.length > 20;
+                        
+                        if (hasHebrewChars && hasEnglishContent) {
+                            successfulSections++;
+                            totalContent.hebrew += hebrewCount;
+                            totalContent.english += englishCount;
+                        }
+                    } else {
+                        errors.push(`Section ${section}: ${data.error || 'Pas de contenu'}`);
+                    }
+                    
+                } catch (error) {
+                    errors.push(`Section ${section}: ${error.message}`);
+                }
+                
+                // Petit délai entre sections
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
+            const duration = Date.now() - startTime;
+            const successRate = (successfulSections / sectionsToTest.length) * 100;
+            
+            // Déterminer le statut du livre
+            let status, details, quality;
+            
+            if (successfulSections === sectionsToTest.length) {
+                status = 'success';
+                details = `✅ FONCTIONNEL - ${successfulSections}/${sectionsToTest.length} sections`;
+                quality = `H: ${totalContent.hebrew}, A: ${totalContent.english} segments`;
+            } else if (successfulSections > 0) {
+                status = 'warning';
+                details = `⚠️ PARTIEL - ${successfulSections}/${sectionsToTest.length} sections`;
+                quality = `Quelques sections disponibles`;
+            } else {
+                status = 'error';
+                details = `❌ NON DISPONIBLE`;
+                quality = `Aucune section accessible`;
+            }
+            
+            updateBookTestCard(testCard, status, {
+                status: details,
+                duration: `${duration}ms`,
+                quality: quality,
+                rate: `${Math.round(successRate)}%`
+            });
+            
+            testResults.push({
+                book: bookTitle,
+                status,
+                successfulSections,
+                totalSections: sectionsToTest.length,
+                successRate,
+                duration,
+                content: totalContent,
+                errors
+            });
+        }
+
+        async function testChayeiMoharanDetailed() {
+            console.log('📖 Test détaillé Chayei Moharan');
+            
+            document.getElementById('testChayei').disabled = true;
+            document.getElementById('testChayei').textContent = '⏳ Test Chayei Moharan...';
+            document.getElementById('results').innerHTML = '';
+            
+            const chayeiResults = [];
+            const maxSections = 20;
+            
+            for (let section = 1; section <= maxSections; section++) {
+                const startTime = Date.now();
+                
+                // Créer carte de test
+                const testCard = createSectionTestCard(section);
+                document.getElementById('results').appendChild(testCard);
+                
+                try {
+                    console.log(`📖 Test Chayei Moharan section ${section}...`);
+                    
+                    const response = await fetch(`/api/sefaria-direct/Chayei%20Moharan/${section}`);
+                    const data = await response.json();
+                    
+                    const duration = Date.now() - startTime;
+                    
+                    if (data.success && data.hebrewText && data.englishText) {
+                        const hebrewCount = Array.isArray(data.hebrewText) ? data.hebrewText.length : 1;
+                        const englishCount = Array.isArray(data.englishText) ? data.englishText.length : 1;
+                        
+                        // Vérifier qualité du contenu
+                        const hebrewSample = Array.isArray(data.hebrewText) ? data.hebrewText[0] : data.hebrewText;
+                        const englishSample = Array.isArray(data.englishText) ? data.englishText[0] : data.englishText;
+                        
+                        const hasHebrewChars = /[\u0590-\u05FF]/.test(hebrewSample);
+                        const hasEnglishContent = englishSample && englishSample.length > 20;
+                        
+                        if (hasHebrewChars && hasEnglishContent) {
+                            updateSectionTestCard(testCard, 'success', {
+                                status: '✅ PARFAIT',
+                                details: `H: ${hebrewCount}, A: ${englishCount}`,
+                                duration: `${duration}ms`
+                            });
+                            
+                            chayeiResults.push({
+                                section,
+                                status: 'success',
+                                hebrewCount,
+                                englishCount,
+                                duration
+                            });
+                        } else {
+                            updateSectionTestCard(testCard, 'warning', {
+                                status: '⚠️ PARTIEL',
+                                details: `H: ${hasHebrewChars ? 'OK' : 'KO'}, A: ${hasEnglishContent ? 'OK' : 'KO'}`,
+                                duration: `${duration}ms`
+                            });
+                            
+                            chayeiResults.push({
+                                section,
+                                status: 'partial',
+                                hebrewCount,
+                                englishCount,
+                                duration
+                            });
+                        }
+                    } else {
+                        updateSectionTestCard(testCard, 'error', {
+                            status: '❌ ÉCHEC',
+                            details: data.error || 'Pas de contenu',
+                            duration: `${duration}ms`
+                        });
+                        
+                        chayeiResults.push({
+                            section,
+                            status: 'error',
+                            error: data.error || 'Pas de contenu',
+                            duration
+                        });
+                    }
+                    
+                } catch (error) {
+                    const duration = Date.now() - startTime;
+                    
+                    updateSectionTestCard(testCard, 'error', {
+                        status: '❌ ERREUR',
+                        details: error.message,
+                        duration: `${duration}ms`
+                    });
+                    
+                    chayeiResults.push({
+                        section,
+                        status: 'error',
+                        error: error.message,
+                        duration
+                    });
+                }
+                
+                updateProgress(section, maxSections);
+                await new Promise(resolve => setTimeout(resolve, 400));
+            }
+            
+            generateChayeiReport(chayeiResults);
+            
+            document.getElementById('testChayei').disabled = false;
+            document.getElementById('testChayei').textContent = '✅ Test Terminé - Relancer';
+        }
+
+        function createBookTestCard(bookTitle) {
+            const card = document.createElement('div');
+            card.className = 'p-4 bg-gray-700 rounded border loading';
+            card.innerHTML = `
+                <div class="font-bold text-center mb-2">${bookTitle}</div>
+                <div class="text-center text-gray-300">⏳ Test en cours...</div>
+            `;
+            return card;
+        }
+
+        function createSectionTestCard(sectionNumber) {
+            const card = document.createElement('div');
+            card.className = 'p-3 bg-gray-700 rounded border loading';
+            card.innerHTML = `
+                <div class="font-bold text-center">Section ${sectionNumber}</div>
+                <div class="text-center text-sm text-gray-300">⏳ Test...</div>
+            `;
+            return card;
+        }
+
+        function updateBookTestCard(card, status, details) {
+            card.className = `p-4 rounded border ${status}`;
+            card.innerHTML = `
+                <div class="font-bold text-center mb-2">${details.status}</div>
+                <div class="text-sm space-y-1 text-center">
+                    <div>📊 Taux: ${details.rate}</div>
+                    <div>📄 ${details.quality}</div>
+                    <div>⏱️ ${details.duration}</div>
+                </div>
+            `;
+        }
+
+        function updateSectionTestCard(card, status, details) {
+            card.className = `p-3 rounded border ${status}`;
+            card.innerHTML = `
+                <div class="font-bold text-center">${details.status}</div>
+                <div class="text-xs text-center space-y-1">
+                    <div>${details.details}</div>
+                    <div>${details.duration}</div>
+                </div>
+            `;
+        }
+
+        function updateProgress(current, total) {
+            const percentage = Math.round((current / total) * 100);
+            document.getElementById('progress').textContent = 
+                `Progression: ${current}/${total} testés (${percentage}%)`;
+        }
+
+        function generateBookReport() {
+            const functional = testResults.filter(r => r.status === 'success');
+            const partial = testResults.filter(r => r.status === 'warning');
+            const broken = testResults.filter(r => r.status === 'error');
+            
+            const report = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="p-4 bg-green-800 rounded">
+                            <div class="text-2xl font-bold">${functional.length}</div>
+                            <div>✅ Livres Fonctionnels</div>
+                        </div>
+                        <div class="p-4 bg-orange-800 rounded">
+                            <div class="text-2xl font-bold">${partial.length}</div>
+                            <div>⚠️ Livres Partiels</div>
+                        </div>
+                        <div class="p-4 bg-red-800 rounded">
+                            <div class="text-2xl font-bold">${broken.length}</div>
+                            <div>❌ Livres Indisponibles</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-4 bg-green-900 rounded">
+                            <h4 class="font-bold text-green-400 mb-3">✅ LIVRES FONCTIONNELS (à inclure):</h4>
+                            <div class="space-y-1 text-sm">
+                                ${functional.map(r => `<div>'${r.book}' - ${r.successfulSections}/${r.totalSections} sections (${Math.round(r.successRate)}%)</div>`).join('')}
+                            </div>
+                        </div>
+                        <div class="p-4 bg-red-900 rounded">
+                            <h4 class="font-bold text-red-400 mb-3">❌ LIVRES PROBLÉMATIQUES (à exclure):</h4>
+                            <div class="space-y-1 text-sm">
+                                ${[...partial, ...broken].map(r => `<div>'${r.book}' - ${r.status === 'warning' ? 'Partiel' : 'Indisponible'}</div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-blue-900 rounded">
+                        <h4 class="font-bold mb-3">🔧 LISTE FINALE POUR L'APPLICATION:</h4>
+                        <pre class="text-sm overflow-x-auto bg-gray-800 p-3 rounded">
+const availableBooks = [
+${functional.map(r => `    '${r.book}'`).join(',\n')}
+];
+                        </pre>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('finalReport').innerHTML = report;
+            
+            console.log('📊 RAPPORT LIVRES:', {
+                functional: functional.map(r => r.book),
+                partial: partial.map(r => r.book),
+                broken: broken.map(r => r.book)
+            });
+        }
+
+        function generateChayeiReport(results) {
+            const successful = results.filter(r => r.status === 'success');
+            const partial = results.filter(r => r.status === 'partial');
+            const failed = results.filter(r => r.status === 'error');
+            
+            const report = `
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold text-center">📖 Rapport Chayei Moharan</h3>
+                    
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="p-3 bg-green-800 rounded">
+                            <div class="text-xl font-bold">${successful.length}</div>
+                            <div>✅ Sections OK</div>
+                        </div>
+                        <div class="p-3 bg-orange-800 rounded">
+                            <div class="text-xl font-bold">${partial.length}</div>
+                            <div>⚠️ Partielles</div>
+                        </div>
+                        <div class="p-3 bg-red-800 rounded">
+                            <div class="text-xl font-bold">${failed.length}</div>
+                            <div>❌ Échecs</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-green-900 rounded">
+                            <h4 class="font-bold text-green-400 mb-2">✅ Sections Fonctionnelles:</h4>
+                            <div class="text-sm">${successful.map(r => r.section).join(', ') || 'Aucune'}</div>
+                        </div>
+                        <div class="p-4 bg-red-900 rounded">
+                            <h4 class="font-bold text-red-400 mb-2">❌ Sections Problématiques:</h4>
+                            <div class="text-sm">${[...partial, ...failed].map(r => r.section).join(', ') || 'Aucune'}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-blue-900 rounded">
+                        <h4 class="font-bold mb-2">🔧 Code pour fullTextExtractor.ts:</h4>
+                        <pre class="text-xs overflow-x-auto">
+'Chayei Moharan': {
+  baseRef: 'Chayei Moharan',
+  sections: [
+${successful.map(r => `    { ref: 'Chayei Moharan ${r.section}', title: 'Biography Part ${r.section}', number: '${r.section}' }`).join(',\n')}
+  ]
+}
+                        </pre>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('finalReport').innerHTML = report;
+            
+            console.log('📖 RAPPORT CHAYEI MOHARAN:', {
+                successful: successful.map(r => r.section),
+                partial: partial.map(r => r.section),
+                failed: failed.map(r => r.section)
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - 11 Livres Breslov</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        select { padding: 10px; font-size: 16px; background: #333; color: white; border: 1px solid #555; }
+        .debug { margin: 20px 0; padding: 10px; background: #2a2a2a; border: 1px solid #555; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug: Test des 11 Livres Breslov</h1>
+    
+    <div class="debug">
+        <h2>Sélecteur de livres:</h2>
+        <select id="bookSelect">
+            <option value="Chayei Moharan">Chayei Moharan</option>
+            <option value="Likutei Moharan">Likutei Moharan</option>
+            <option value="Sichot HaRan">Sichot HaRan</option>
+            <option value="Shivchei HaRan">Shivchei HaRan</option>
+            <option value="Sippurei Maasiyot">Sippurei Maasiyot</option>
+            <option value="Likutei Tefilot">Likutei Tefilot</option>
+            <option value="Sefer HaMiddot">Sefer HaMiddot</option>
+            <option value="Likutei Halakhot">Likutei Halakhot</option>
+            <option value="Likutei Etzot">Likutei Etzot</option>
+            <option value="Alim LiTerufah">Alim LiTerufah</option>
+            <option value="Kitzur Likutei Moharan">Kitzur Likutei Moharan</option>
+        </select>
+    </div>
+    
+    <div class="debug" id="results">
+        <h2>Résultats du diagnostic:</h2>
+        <div id="output"></div>
+    </div>
+    
+    <script>
+        // Debug immédiat
+        console.log('=== DEBUG DES LIVRES ===');
+        
+        const availableBooks = [
+            'Chayei Moharan',
+            'Likutei Moharan', 
+            'Sichot HaRan',
+            'Shivchei HaRan',
+            'Sippurei Maasiyot',
+            'Likutei Tefilot',
+            'Sefer HaMiddot',
+            'Likutei Halakhot',
+            'Likutei Etzot',
+            'Alim LiTerufah',
+            'Kitzur Likutei Moharan'
+        ];
+        
+        // Test 1: Array complet
+        console.log('1. Array availableBooks:', availableBooks);
+        console.log('   Nombre total:', availableBooks.length);
+        
+        // Test 2: Options dans le DOM
+        const options = document.querySelectorAll('#bookSelect option');
+        console.log('2. Options dans le DOM:', options.length);
+        console.log('   Valeurs:', Array.from(options).map(o => o.value));
+        
+        // Test 3: Affichage dans la page
+        const output = document.getElementById('output');
+        output.innerHTML = `
+            <p><strong>Nombre de livres dans availableBooks:</strong> ${availableBooks.length}</p>
+            <p><strong>Nombre d'options dans le sélecteur:</strong> ${options.length}</p>
+            <p><strong>Liste des livres:</strong></p>
+            <ul>
+                ${availableBooks.map(book => `<li>${book}</li>`).join('')}
+            </ul>
+        `;
+        
+        // Test 4: Vérification si le problème vient du React
+        if (window.React) {
+            console.log('3. React détecté - le problème pourrait être dans le rendu React');
+        } else {
+            console.log('3. Pas de React - test HTML statique');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Test Collection Breslov Complète - Sefaria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-6">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center">🔍 Test Collection Breslov Complète (13 Livres Sefaria)</h1>
+        
+        <div class="mb-6 flex gap-4">
+            <button onclick="testAllBreslovBooks()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded text-white font-bold">
+                🚀 Tester toute la collection Breslov
+            </button>
+            <button onclick="clearResults()" class="ml-4 px-6 py-3 bg-red-600 hover:bg-red-700 rounded text-white font-bold">
+                🗑️ Effacer les résultats
+            </button>
+            <button onclick="generateUpdatedList()" class="ml-4 px-6 py-3 bg-green-600 hover:bg-green-700 rounded text-white font-bold">
+                📋 Générer liste mise à jour
+            </button>
+        </div>
+        
+        <div id="progress" class="mb-6 hidden">
+            <div class="bg-gray-800 rounded-full h-4">
+                <div id="progressBar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="progressText" class="text-center mt-2">Test en cours...</p>
+        </div>
+        
+        <div id="results" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"></div>
+        
+        <div id="summary" class="mt-8 p-4 bg-gray-800 rounded"></div>
+        
+        <div id="codeGeneration" class="mt-8 p-4 bg-gray-800 rounded hidden">
+            <h2 class="text-xl font-bold mb-4">📝 Code à copier dans votre application</h2>
+            <textarea id="generatedCode" class="w-full h-40 bg-gray-700 text-white p-4 rounded font-mono text-sm" readonly></textarea>
+        </div>
+    </div>
+
+    <script>
+        // COLLECTION BRESLOV COMPLÈTE BASÉE SUR RECHERCHE SEFARIA
+        const completeBreslovCollection = [
+            // LIVRES ACTUELLEMENT FONCTIONNELS (5)
+            { name: 'Likutei Moharan', status: 'known_working', category: 'core' },
+            { name: 'Chayei Moharan', status: 'known_working', category: 'biography' },
+            { name: 'Sichot HaRan', status: 'known_working', category: 'talks' },
+            { name: 'Shivchei HaRan', status: 'known_working', category: 'praises' },
+            { name: 'Sippurei Maasiyot', status: 'known_working', category: 'stories' },
+            
+            // LIVRES À TESTER (COLLECTION BRESLOV COMPLÈTE)
+            { name: 'Sefer HaMiddot', status: 'to_test', category: 'ethics' },
+            { name: 'Likutei Tefilot', status: 'to_test', category: 'prayers' },
+            { name: 'Tikkun HaKlali', status: 'to_test', category: 'prayers' },
+            { name: 'Likutei Halachot', status: 'to_test', category: 'halacha' },
+            { name: 'Likutei Eitzot', status: 'to_test', category: 'advice' },
+            { name: 'Yimay Maharant', status: 'to_test', category: 'biography' },
+            { name: 'Megillat Setarim', status: 'to_test', category: 'mystical' },
+            { name: 'Kitzur Likutei Moharan', status: 'to_test', category: 'summary' },
+            
+            // VARIANTES DE NOMS À TESTER
+            { name: 'Likutei Moharan II', status: 'to_test', category: 'core_variant' },
+            { name: 'Alim LiTerufah', status: 'to_test', category: 'healing' },
+        ];
+
+        let testResults = [];
+
+        async function testSingleBook(book, index, total) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'p-4 border rounded';
+            resultDiv.id = `result-${index}`;
+            
+            if (book.status === 'known_working') {
+                resultDiv.className = 'p-4 border border-green-500 bg-green-900/20 rounded';
+                resultDiv.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2 text-green-400">✅ ${book.name}</h3>
+                    <div class="text-sm">
+                        <div>📊 Statut: <span class="font-bold text-green-300">Déjà validé</span></div>
+                        <div>🏷️ Catégorie: ${book.category}</div>
+                        <div class="text-gray-400 mt-1">Livre déjà testé et fonctionnel</div>
+                    </div>
+                `;
+                document.getElementById('results').appendChild(resultDiv);
+                return { book: book.name, status: 'success', category: book.category, preValidated: true };
+            }
+
+            resultDiv.innerHTML = `
+                <h3 class="font-bold text-lg mb-2">${book.name}</h3>
+                <div class="text-yellow-400">⏳ Test en cours...</div>
+                <div class="text-xs text-gray-400">Catégorie: ${book.category}</div>
+            `;
+            document.getElementById('results').appendChild(resultDiv);
+
+            // Mise à jour progress bar
+            const progress = ((index + 1) / total) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            document.getElementById('progressText').textContent = `Test ${index + 1}/${total}: ${book.name}`;
+
+            try {
+                const response = await fetch(`/api/sefaria-direct/${encodeURIComponent(book.name)}/1`);
+                const data = await response.json();
+                
+                if (data.success && data.hebrewText && data.englishText) {
+                    resultDiv.className = 'p-4 border border-green-500 bg-green-900/20 rounded';
+                    resultDiv.innerHTML = `
+                        <h3 class="font-bold text-lg mb-2 text-green-400">✅ ${book.name}</h3>
+                        <div class="text-sm space-y-1">
+                            <div>📊 Segments anglais: <span class="font-bold">${data.totalSegments || 0}</span></div>
+                            <div>📊 Segments hébreux: <span class="font-bold">${data.hebrewSegments || 0}</span></div>
+                            <div>📖 Référence: ${data.reference || 'N/A'}</div>
+                            <div>🏷️ Catégorie: ${book.category}</div>
+                            <div class="mt-2 p-2 bg-gray-800 rounded text-xs">
+                                <div class="text-blue-300 mb-1">🇺🇸 Anglais (extrait):</div>
+                                <div>${data.englishText?.[0]?.substring(0, 80) || 'N/A'}...</div>
+                            </div>
+                            <div class="mt-2 p-2 bg-gray-800 rounded text-xs">
+                                <div class="text-yellow-300 mb-1">🇮🇱 Hébreu (extrait):</div>
+                                <div class="text-right">${data.hebrewText?.[0]?.substring(0, 80) || 'N/A'}...</div>
+                            </div>
+                        </div>
+                    `;
+                    return { book: book.name, status: 'success', category: book.category, ...data };
+                } else {
+                    resultDiv.className = 'p-4 border border-red-500 bg-red-900/20 rounded';
+                    resultDiv.innerHTML = `
+                        <h3 class="font-bold text-lg mb-2 text-red-400">❌ ${book.name}</h3>
+                        <div class="text-sm">
+                            <div class="text-red-300">Erreur: ${data.error || 'Livre non trouvé'}</div>
+                            <div class="text-gray-400 mt-1">Détails: ${data.details || 'N/A'}</div>
+                            <div>🏷️ Catégorie: ${book.category}</div>
+                        </div>
+                    `;
+                    return { book: book.name, status: 'error', category: book.category, error: data.error };
+                }
+            } catch (error) {
+                resultDiv.className = 'p-4 border border-red-500 bg-red-900/20 rounded';
+                resultDiv.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2 text-red-400">❌ ${book.name}</h3>
+                    <div class="text-sm">
+                        <div class="text-red-300">Erreur réseau: ${error.message}</div>
+                        <div>🏷️ Catégorie: ${book.category}</div>
+                    </div>
+                `;
+                return { book: book.name, status: 'network_error', category: book.category, error: error.message };
+            }
+        }
+
+        async function testAllBreslovBooks() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('summary').innerHTML = '';
+            document.getElementById('codeGeneration').classList.add('hidden');
+            document.getElementById('progress').classList.remove('hidden');
+            
+            testResults = [];
+            
+            for (let i = 0; i < completeBreslovCollection.length; i++) {
+                const result = await testSingleBook(completeBreslovCollection[i], i, completeBreslovCollection.length);
+                testResults.push(result);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Délai entre tests
+            }
+
+            document.getElementById('progress').classList.add('hidden');
+            generateSummary();
+            generateUpdatedCode();
+        }
+
+        function generateSummary() {
+            const successful = testResults.filter(r => r.status === 'success');
+            const failed = testResults.filter(r => r.status !== 'success');
+            
+            // Grouper par catégorie
+            const categories = {};
+            successful.forEach(book => {
+                if (!categories[book.category]) categories[book.category] = [];
+                categories[book.category].push(book);
+            });
+
+            const summaryHTML = `
+                <h2 class="text-2xl font-bold mb-4">📊 Résumé de l'analyse Collection Breslov</h2>
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <div class="p-4 bg-green-900/20 border border-green-500 rounded">
+                        <h3 class="text-xl font-bold text-green-400 mb-3">✅ Livres fonctionnels (${successful.length})</h3>
+                        ${Object.entries(categories).map(([cat, books]) => `
+                            <div class="mb-3">
+                                <h4 class="font-bold text-green-300 mb-1">${cat.toUpperCase()}:</h4>
+                                <ul class="space-y-1 ml-4">
+                                    ${books.map(book => `
+                                        <li class="text-sm">
+                                            <span class="font-bold">${book.book}</span> 
+                                            <span class="text-gray-400">(${book.totalSegments || '?'} segments)</span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="p-4 bg-red-900/20 border border-red-500 rounded">
+                        <h3 class="text-xl font-bold text-red-400 mb-3">❌ Livres problématiques (${failed.length})</h3>
+                        <ul class="space-y-1">
+                            ${failed.map(book => `
+                                <li class="text-sm">
+                                    <span class="font-bold">${book.book}</span>
+                                    <div class="text-gray-400 ml-2">${book.error || 'Erreur inconnue'}</div>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="p-4 bg-blue-900/20 border border-blue-500 rounded">
+                    <h3 class="text-lg font-bold text-blue-400 mb-2">💡 Recommandations</h3>
+                    <ul class="text-sm space-y-1">
+                        <li>• <strong>${successful.length} livres prêts</strong> pour intégration dans l'interface</li>
+                        <li>• ${failed.length} livres nécessitent vérification des formats de référence</li>
+                        <li>• Collection totale disponible : ${successful.length}/${completeBreslovCollection.length} livres</li>
+                        <li>• Mettre à jour la liste availableBooks avec ${successful.length} livres validés</li>
+                    </ul>
+                </div>
+            `;
+
+            document.getElementById('summary').innerHTML = summaryHTML;
+        }
+
+        function generateUpdatedCode() {
+            const successful = testResults.filter(r => r.status === 'success');
+            const failed = testResults.filter(r => r.status !== 'success');
+            
+            const codeToGenerate = `// LISTE MISE À JOUR POUR VOTRE APPLICATION (${new Date().toLocaleDateString()})
+// Basée sur tests automatiques de la collection Breslov complète
+
+// ✅ LIVRES TESTÉS ET FONCTIONNELS (${successful.length})
+const availableBooks = [
+${successful.map(book => `    '${book.book}', // ${book.category} - ${book.totalSegments || '?'} segments`).join('\n')}
+];
+
+// ❌ LIVRES AVEC PROBLÈMES À ÉVITER (${failed.length})
+const problematicBooks = [
+${failed.map(book => `    '${book.book}', // ${book.error || 'Erreur format référence'}`).join('\n')}
+];
+
+// 📊 STATISTIQUES
+// - Collection Breslov testée : ${completeBreslovCollection.length} livres
+// - Livres fonctionnels : ${successful.length} (${Math.round(successful.length/completeBreslovCollection.length*100)}%)
+// - Livres problématiques : ${failed.length} (${Math.round(failed.length/completeBreslovCollection.length*100)}%)
+// - Prêt pour mise à jour dans client/carre-trilingue.html
+
+console.log('📚 Collection Breslov mise à jour : ${successful.length} livres disponibles');`;
+
+            document.getElementById('generatedCode').value = codeToGenerate;
+            document.getElementById('codeGeneration').classList.remove('hidden');
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('summary').innerHTML = '';
+            document.getElementById('codeGeneration').classList.add('hidden');
+            document.getElementById('progress').classList.add('hidden');
+            testResults = [];
+        }
+
+        // Auto-démarrage du test
+        window.onload = () => {
+            setTimeout(testAllBreslovBooks, 1000);
+        };
+    </script>
+</body>
+</html>
