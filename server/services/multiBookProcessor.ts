@@ -471,6 +471,97 @@ Sources trouvées:
       return false;
     }
   }
+
+  async getBookSection(bookTitleFrench: string, sectionNumber: number): Promise<{
+    success: boolean;
+    hebrewText: string[];
+    englishText: string[];
+    frenchText: string[];
+    bookId: string;
+    chunkIndex: number;
+    totalChunks: number;
+    error?: string;
+  }> {
+    try {
+      await this.initialize();
+      
+      // Find book by French title
+      const book = Array.from(this.books.values()).find(b => 
+        b.titleFrench === bookTitleFrench || 
+        b.title === bookTitleFrench
+      );
+      
+      if (!book) {
+        return {
+          success: false,
+          error: `Livre "${bookTitleFrench}" non trouvé`,
+          hebrewText: [],
+          englishText: [],
+          frenchText: [],
+          bookId: '',
+          chunkIndex: 0,
+          totalChunks: 0
+        };
+      }
+
+      const chunkIndex = sectionNumber - 1; // Convert to 0-based index
+      
+      if (chunkIndex < 0 || chunkIndex >= book.chunks.length) {
+        return {
+          success: false,
+          error: `Section ${sectionNumber} non trouvée (livre contient ${book.chunks.length} sections)`,
+          hebrewText: [],
+          englishText: [],
+          frenchText: [],
+          bookId: book.id,
+          chunkIndex: 0,
+          totalChunks: book.chunks.length
+        };
+      }
+
+      const chunk = book.chunks[chunkIndex];
+      const lines = chunk.content.split('\n').filter(line => line.trim());
+      
+      // For Hebrew texts, put content in hebrewText array
+      // For French texts, put content in englishText array (since they're already in French)
+      const hebrewText: string[] = [];
+      const englishText: string[] = [];
+      const frenchText: string[] = [];
+      
+      if (chunk.isRTL) {
+        // Hebrew text
+        hebrewText.push(...lines);
+      } else {
+        // French text (display as "english" for compatibility with frontend)
+        englishText.push(...lines);
+      }
+      
+      console.log(`[MultiBook] Section ${sectionNumber} du livre "${bookTitleFrench}": ${lines.length} lignes (${chunk.isRTL ? 'hébreu' : 'français'})`);
+      
+      return {
+        success: true,
+        hebrewText,
+        englishText,
+        frenchText,
+        bookId: book.id,
+        chunkIndex,
+        totalChunks: book.chunks.length
+      };
+      
+    } catch (error) {
+      console.error('[MultiBook] Erreur getBookSection:', error);
+      return {
+        success: false,
+        error: `Erreur: ${error.message}`,
+        hebrewText: [],
+        englishText: [],
+        frenchText: [],
+        bookId: '',
+        chunkIndex: 0,
+        totalChunks: 0
+      };
+    }
+  }
 }
 
 export const multiBookProcessor = new MultiBookProcessor();

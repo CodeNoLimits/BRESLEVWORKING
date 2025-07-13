@@ -92,7 +92,7 @@
 
         // === COMPOSANT PRINCIPAL CARRÉS TRILINGUE ===
         function CarreTrilingueApp() {
-            const [selectedBook, setSelectedBook] = useState('Likutei Moharan');
+            const [selectedBook, setSelectedBook] = useState('');
             const [selectedSection, setSelectedSection] = useState('1');
             const [isLoading, setIsLoading] = useState(false);
             const [userQuestion, setUserQuestion] = useState('');
@@ -117,7 +117,8 @@
             
             const recognitionRef = useRef(null);
             // 🚀 LIVRES CHARGÉS DYNAMIQUEMENT DEPUIS L'API (14 livres disponibles)
-            let availableBooks = [];
+            const [availableBooks, setAvailableBooks] = useState([]);
+            const [booksLoaded, setBooksLoaded] = useState(false);
             
             // 📚 FONCTION DE CHARGEMENT DYNAMIQUE DES LIVRES
             async function loadBooksFromAPI() {
@@ -127,49 +128,37 @@
                     const data = await response.json();
                     
                     // Extraire les titres français
-                    availableBooks = data.books.map(book => book.titleFrench || book.title);
+                    const books = data.books.map(book => book.titleFrench || book.title);
+                    setAvailableBooks(books);
+                    setBooksLoaded(true);
                     
-                    console.log(`✅ ${availableBooks.length} livres Breslov chargés:`, availableBooks);
-                    
-                    // Mettre à jour le sélecteur de livres
-                    updateBookSelector();
+                    console.log(`✅ ${books.length} livres Breslov chargés:`, books);
                     
                     // Mettre à jour le titre de la page pour confirmer
-                    document.title = `Le Compagnon du Cœur - ${availableBooks.length} Livres Breslov`;
+                    document.title = `Le Compagnon du Cœur - ${books.length} Livres Breslov`;
                     
                 } catch (error) {
                     console.error('❌ Erreur chargement livres:', error);
                     // Fallback sur liste minimale si erreur API
-                    availableBooks = [
+                    const fallbackBooks = [
                         'Les Enseignements de Rabbi Nahman',
                         'Chayei Moharan (Vie de Rabbi Nahman)', 
                         'Les Contes de Rabbi Nahman',
                         'Recueil de Prières',
                         'La Vie de Rabbi Nahman'
                     ];
-                    updateBookSelector();
-                }
-            }
-            
-            // 🔄 FONCTION POUR METTRE À JOUR LE SÉLECTEUR
-            function updateBookSelector() {
-                const bookSelector = document.getElementById('bookSelector');
-                if (bookSelector) {
-                    bookSelector.innerHTML = '<option value="">Sélectionner un livre Breslov</option>';
-                    availableBooks.forEach(book => {
-                        const option = document.createElement('option');
-                        option.value = book;
-                        option.textContent = book;
-                        bookSelector.appendChild(option);
-                    });
-                    console.log(`✅ Sélecteur mis à jour avec ${availableBooks.length} livres`);
+                    setAvailableBooks(fallbackBooks);
+                    setBooksLoaded(true);
                 }
             }
 
             // === INITIALISATION ===
             useEffect(() => {
                 console.log('🕊️ Layout Carrés Trilingue - Initialisation...');
-                loadBooksFromAPI(); // 🚀 CHARGER LES 14 LIVRES AU DÉMARRAGE
+                // Fonction async pour charger les livres
+                (async () => {
+                    await loadBooksFromAPI(); // 🚀 CHARGER LES 14 LIVRES AU DÉMARRAGE
+                })();
                 initializeTTS();
                 loadSefariaText();
                 
@@ -301,7 +290,7 @@
                 try {
                     console.log(`[CarréTrilingue] Chargement: ${selectedBook} section ${selectedSection}`);
                     
-                    const response = await fetch(`/api/sefaria-direct/${encodeURIComponent(selectedBook)}/${selectedSection}`);
+                    const response = await fetch(`/api/multi-book/section/${encodeURIComponent(selectedBook)}/${selectedSection}`);
                     const data = await response.json();
                     
                     if (data.success) {
@@ -377,24 +366,23 @@
                 setMessages(prev => [...prev, newMessage]);
                 
                 try {
-                    const response = await fetch('/api/sefaria-direct/search', {
+                    const response = await fetch('/api/multi-book/search', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             query: userQuestion,
-                            bookTitle: selectedBook,
-                            sectionNumber: selectedSection
+                            bookIds: selectedBook ? [selectedBook] : undefined
                         })
                     });
                     
                     const data = await response.json();
                     
-                    if (data.success) {
+                    if (data.answer) {
                         const aiMessage = {
                             type: 'ai',
                             content: data.answer,
-                            source: `${data.sourceBook} - ${data.sourceReference}`,
-                            foundInText: data.foundInText,
+                            source: data.bookResults ? data.bookResults.map(b => b.bookTitle).join(', ') : 'Multi-livres',
+                            foundInText: data.overallFound || false,
                             timestamp: Date.now()
                         };
                         setMessages(prev => [...prev, aiMessage]);
@@ -427,24 +415,23 @@
                 setMessages(prev => [...prev, newMessage]);
                 
                 try {
-                    const response = await fetch('/api/sefaria-direct/search', {
+                    const response = await fetch('/api/multi-book/search', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             query: transcript,
-                            bookTitle: selectedBook,
-                            sectionNumber: selectedSection
+                            bookIds: selectedBook ? [selectedBook] : undefined
                         })
                     });
                     
                     const data = await response.json();
                     
-                    if (data.success) {
+                    if (data.answer) {
                         const aiMessage = {
                             type: 'ai',
                             content: data.answer,
-                            source: `${data.sourceBook} - ${data.sourceReference}`,
-                            foundInText: data.foundInText,
+                            source: data.bookResults ? data.bookResults.map(b => b.bookTitle).join(', ') : 'Multi-livres',
+                            foundInText: data.overallFound || false,
                             timestamp: Date.now()
                         };
                         setMessages(prev => [...prev, aiMessage]);
@@ -468,9 +455,18 @@
                 }
             };
 
+            // Set default book when books are loaded
+            useEffect(() => {
+                if (booksLoaded && availableBooks.length > 0 && !selectedBook) {
+                    setSelectedBook(availableBooks[0]);
+                }
+            }, [booksLoaded, availableBooks]);
+
             // Charger le texte quand livre/section change
             useEffect(() => {
-                loadSefariaText();
+                if (selectedBook) {
+                    loadSefariaText();
+                }
             }, [selectedBook, selectedSection]);
 
             return (
@@ -488,10 +484,17 @@
                                     value={selectedBook}
                                     onChange={(e) => setSelectedBook(e.target.value)}
                                     className="px-3 py-2 bg-spiritual-700 border border-spiritual-600 rounded text-white"
+                                    disabled={!booksLoaded}
                                 >
-                                    {availableBooks.map(book => (
-                                        <option key={book} value={book}>{book}</option>
-                                    ))}
+                                    {!booksLoaded ? (
+                                        <option value="">🔄 Chargement des livres...</option>
+                                    ) : availableBooks.length === 0 ? (
+                                        <option value="">❌ Aucun livre trouvé</option>
+                                    ) : (
+                                        availableBooks.map(book => (
+                                            <option key={book} value={book}>{book}</option>
+                                        ))
+                                    )}
                                 </select>
                                 
                                 <input

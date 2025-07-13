@@ -163,5 +163,55 @@ export function registerMultiBookRoutes(app: Express) {
     }
   });
 
+  // Route pour récupérer une section spécifique d'un livre (pour l'affichage)
+  app.get('/api/multi-book/section/:bookTitle/:sectionNumber', async (req: Request, res: Response) => {
+    try {
+      const { bookTitle, sectionNumber } = req.params;
+      const section = parseInt(sectionNumber);
+      
+      if (isNaN(section) || section < 1) {
+        return res.status(400).json({ 
+          error: 'Numéro de section invalide',
+          success: false 
+        });
+      }
+
+      console.log(`[MultiBook] Récupération section ${section} du livre "${bookTitle}"`);
+      
+      const result = await multiBookProcessor.getBookSection(decodeURIComponent(bookTitle), section);
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          hebrewText: result.hebrewText,
+          englishText: result.englishText,
+          frenchText: result.frenchText,
+          totalSegments: result.englishText.length,
+          hebrewSegments: result.hebrewText.length,
+          bookId: result.bookId,
+          currentSection: section,
+          totalSections: result.totalChunks
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: result.error,
+          hebrewText: [],
+          englishText: [],
+          frenchText: [],
+          totalSegments: 0,
+          hebrewSegments: 0
+        });
+      }
+    } catch (error) {
+      console.error('[MultiBook] Erreur récupération section:', error);
+      res.status(500).json({ 
+        error: 'Erreur lors de la récupération de la section',
+        success: false,
+        details: String(error)
+      });
+    }
+  });
+
   console.log('[Route] Routes Multi-Livres configurées ✓');
 }
