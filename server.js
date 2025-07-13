@@ -77,6 +77,14 @@ logger.info('🚀 Winston logger initialized', {
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// Servir les fichiers statiques du frontend
+app.use(express.static('client'));
+
+// Route racine pour rediriger vers l'application
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/client/index.html');
+});
+
 // Middleware de logging des requêtes
 app.use((req, res, next) => {
   const startTime = Date.now();
