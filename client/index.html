@@ -3,74 +3,696 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🕊️ Le Compagnon du Cœur - Rabbi Nahman de Breslev</title>
+    <title>🕊️ Le Compagnon du Cœur - Layout Carrés Trilingue</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        spiritual: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a'
+                        },
+                        sacred: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .rtl-text {
+            direction: rtl;
+            text-align: right;
+            font-family: 'Times New Roman', serif;
+            line-height: 1.8;
         }
-        .container {
-            background: white;
-            padding: 40px;
+        .hebrew-text {
+            font-family: 'David Libre', 'Times New Roman', serif;
+            font-size: 1.1em;
+            line-height: 2;
+        }
+        .text-container {
+            background: rgba(15, 23, 42, 0.7);
+            border: 2px solid rgba(251, 191, 36, 0.3);
             border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            text-align: center;
-            max-width: 500px;
+            padding: 1.5rem;
+            height: 400px;
+            overflow-y: auto;
         }
-        h1 {
-            color: #1e293b;
-            margin-bottom: 20px;
+        .french-container {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+            border: 2px solid rgba(34, 197, 94, 0.3);
         }
-        .nav-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 30px;
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
         }
-        .nav-button {
-            padding: 15px 25px;
-            background: #334155;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            font-weight: 500;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .nav-button:hover {
-            background: #475569;
-            transform: translateY(-2px);
-        }
-        .primary {
-            background: #f59e0b;
-        }
-        .primary:hover {
-            background: #d97706;
+        .spiritual-glow {
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>🕊️ Le Compagnon du Cœur</h1>
-        <p>Application spirituelle pour les enseignements de Rabbi Nahman de Breslev</p>
-        
-        <div class="nav-buttons">
-            <a href="/carre-trilingue" class="nav-button primary">Interface Carrés Trilingue (Recommandée)</a>
-            <a href="/carre-trilingue-v2" class="nav-button">Interface Carrés Trilingue V2 (IA)</a>
-            <a href="/chayei-moharan" class="nav-button">Chayei Moharan Complet</a>
-            <a href="/sefaria-reader" class="nav-button">Lecteur Breslov Sefaria</a>
-            <a href="/trilingue" class="nav-button">Chayei Moharan Trilingue</a>
-            <a href="/test-books" class="nav-button">Test Collection Complète</a>
-        </div>
-        
-        <div style="margin-top: 30px; font-size: 14px; color: #666;">
-            <p>Choisissez l'interface qui vous convient le mieux pour explorer les enseignements spirituels.</p>
-        </div>
-    </div>
+<body class="bg-gradient-to-br from-spiritual-900 via-spiritual-800 to-spiritual-900 text-white min-h-screen">
+    <div id="carre-trilingue-app"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // === COMPOSANT PRINCIPAL CARRÉS TRILINGUE ===
+        function CarreTrilingueApp() {
+            const [selectedBook, setSelectedBook] = useState('Likutei Moharan');
+            const [selectedSection, setSelectedSection] = useState('1');
+            const [isLoading, setIsLoading] = useState(false);
+            const [userQuestion, setUserQuestion] = useState('');
+            const [messages, setMessages] = useState([]);
+            const [isSearching, setIsSearching] = useState(false);
+            
+            // Textes
+            const [hebrewText, setHebrewText] = useState([]);
+            const [englishText, setEnglishText] = useState([]);
+            const [frenchText, setFrenchText] = useState('');
+            const [showFrench, setShowFrench] = useState(false);
+            const [showEnglish, setShowEnglish] = useState(true);
+            const [isTranslating, setIsTranslating] = useState(false);
+            const [frenchProgress, setFrenchProgress] = useState(0);
+            
+            // TTS/STT States
+            const [isTTSEnabled, setIsTTSEnabled] = useState(true);
+            const [isListening, setIsListening] = useState(false);
+            const [isSpeaking, setIsSpeaking] = useState(false);
+            const [voices, setVoices] = useState([]);
+            const [selectedVoice, setSelectedVoice] = useState(null);
+            
+            const recognitionRef = useRef(null);
+            // Livres testés et fonctionnels sur Sefaria (mis à jour juillet 2025)
+            const availableBooks = [
+                'Likutei Moharan', 
+                'Chayei Moharan', 
+                'Sichot HaRan',
+                'Shivchei HaRan',
+                'Sippurei Maasiyot'
+            ];
+            
+            // Livres avec problèmes identifiés (à éviter)
+            const problematicBooks = [
+                'Likutei Tefilot', // "Book not found in Breslov collection"
+                'Sefer HaMiddot',  // "Book not found in Breslov collection" 
+                'Alim LiTerufah',  // Non testé - potentiellement problématique
+                'Kitzur Likutei Moharan', // Non testé
+                'Likutei Etzot'    // Non testé
+            ];
+
+            // === INITIALISATION ===
+            useEffect(() => {
+                console.log('🕊️ Layout Carrés Trilingue - Initialisation...');
+                initializeTTS();
+                loadSefariaText();
+                
+                return () => {
+                    if (speechSynthesis) {
+                        speechSynthesis.cancel();
+                    }
+                };
+            }, []);
+
+            // === TTS SYSTEM (OPTIMISÉ DU 3 JUILLET) ===
+            const initializeTTS = () => {
+                console.log('🗣️ Initialisation TTS optimisée...');
+                
+                const loadVoices = () => {
+                    const allVoices = speechSynthesis.getVoices();
+                    const frenchVoices = allVoices.filter(voice => 
+                        voice.lang.startsWith('fr') || voice.name.toLowerCase().includes('french')
+                    );
+                    
+                    console.log(`🇫🇷 Voix françaises trouvées:`, frenchVoices.map(v => v.name));
+                    setVoices(frenchVoices);
+                    
+                    if (frenchVoices.length > 0 && !selectedVoice) {
+                        const amelie = frenchVoices.find(v => v.name === 'Amélie') || frenchVoices[0];
+                        setSelectedVoice(amelie);
+                        console.log(`🎵 Voix sélectionnée: ${amelie.name}`);
+                    }
+                };
+
+                loadVoices();
+                speechSynthesis.onvoiceschanged = loadVoices;
+
+                // Speech Recognition avec délai optimisé (2 secondes)
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognitionRef.current = new SpeechRecognition();
+                    recognitionRef.current.lang = 'fr-FR';
+                    recognitionRef.current.continuous = false;
+                    recognitionRef.current.interimResults = false;
+
+                    recognitionRef.current.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        console.log('🎤 Transcription:', transcript);
+                        setUserQuestion(transcript);
+                        setIsListening(false);
+                        
+                        // ENVOI AUTOMATIQUE après reconnaissance vocale
+                        setTimeout(() => {
+                            if (transcript.trim()) {
+                                console.log('🚀 Envoi automatique de la question vocale:', transcript);
+                                // Simuler le clic sur rechercher en utilisant l'état temporaire
+                                searchInTextWithTranscript(transcript);
+                            }
+                        }, 100);
+                    };
+
+                    recognitionRef.current.onerror = (event) => {
+                        console.error('❌ Erreur reconnaissance vocale:', event.error);
+                        setIsListening(false);
+                    };
+
+                    recognitionRef.current.onend = () => {
+                        setIsListening(false);
+                    };
+                }
+            };
+
+            const speak = (text, language = 'fr') => {
+                if (!isTTSEnabled) return;
+                
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                const allVoices = speechSynthesis.getVoices();
+                
+                if (language === 'he') {
+                    utterance.voice = allVoices.find(v => v.lang.includes('he')) || allVoices[0];
+                    utterance.rate = 0.7;
+                    utterance.pitch = 1.1;
+                } else if (language === 'en') {
+                    utterance.voice = allVoices.find(v => v.lang.includes('en')) || allVoices[0];
+                    utterance.rate = 0.9;
+                } else {
+                    utterance.voice = selectedVoice || allVoices[0];
+                    utterance.rate = 0.9;
+                }
+                
+                utterance.onstart = () => {
+                    setIsSpeaking(true);
+                    console.log('🔊 TTS démarré');
+                };
+                
+                utterance.onend = () => {
+                    setIsSpeaking(false);
+                    console.log('🔊 TTS terminé');
+                };
+                
+                utterance.onerror = (event) => {
+                    console.error('❌ Erreur TTS:', event);
+                    setIsSpeaking(false);
+                };
+                
+                speechSynthesis.speak(utterance);
+            };
+
+            const startListening = () => {
+                if (recognitionRef.current && !isListening) {
+                    // Arrêter TTS si en cours
+                    if (isSpeaking) {
+                        speechSynthesis.cancel();
+                        setIsSpeaking(false);
+                    }
+                    
+                    setIsListening(true);
+                    recognitionRef.current.start();
+                    console.log('🎤 Écoute démarrée (délai optimisé 2s)');
+                }
+            };
+
+            const stopSpeaking = () => {
+                speechSynthesis.cancel();
+                setIsSpeaking(false);
+            };
+
+            // === CHARGEMENT TEXTE SEFARIA ===
+            const loadSefariaText = async () => {
+                setIsLoading(true);
+                try {
+                    console.log(`[CarréTrilingue] Chargement: ${selectedBook} section ${selectedSection}`);
+                    
+                    const response = await fetch(`/api/sefaria-direct/${encodeURIComponent(selectedBook)}/${selectedSection}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        setHebrewText(data.hebrewText || []);
+                        setEnglishText(data.englishText || []);
+                        setFrenchText('');
+                        setShowFrench(false);
+                        setFrenchProgress(0);
+                        
+                        console.log(`✅ Texte chargé: ${data.totalSegments} segments anglais, ${data.hebrewSegments} segments hébreux`);
+                    } else {
+                        console.error('❌ Erreur Sefaria:', data.error);
+                    }
+                } catch (error) {
+                    console.error('❌ Erreur chargement:', error);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            // === TRADUCTION FRANÇAISE LAZY ===
+            const translateToFrench = async () => {
+                if (isTranslating) return;
+                
+                setIsTranslating(true);
+                try {
+                    const startIndex = frenchProgress;
+                    const segmentsToTranslate = englishText.slice(startIndex, startIndex + 5);
+                    const textToTranslate = segmentsToTranslate.join('\n\n');
+                    
+                    console.log(`🇫🇷 Traduction segments ${startIndex}-${startIndex + 5}/${englishText.length}`);
+                    
+                    const response = await fetch('/api/sefaria-direct/translate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: textToTranslate,
+                            language: 'en',
+                            bookTitle: selectedBook
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.translation) {
+                        if (frenchProgress === 0) {
+                            setFrenchText(data.translation);
+                        } else {
+                            setFrenchText(prev => prev + '\n\n' + data.translation);
+                        }
+                        setFrenchProgress(startIndex + 5);
+                        setShowFrench(true);
+                    }
+                } catch (error) {
+                    console.error('❌ Erreur traduction:', error);
+                    setFrenchText(prev => prev + '\n\nErreur de traduction française');
+                } finally {
+                    setIsTranslating(false);
+                }
+            };
+
+            const continueTranslation = () => {
+                if (frenchProgress < englishText.length) {
+                    translateToFrench();
+                }
+            };
+
+            // === RECHERCHE IA DANS LE TEXTE ===
+            const searchInText = async () => {
+                if (!userQuestion.trim() || isSearching) return;
+                
+                setIsSearching(true);
+                const newMessage = { type: 'user', content: userQuestion, timestamp: Date.now() };
+                setMessages(prev => [...prev, newMessage]);
+                
+                try {
+                    const response = await fetch('/api/sefaria-direct/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: userQuestion,
+                            bookTitle: selectedBook,
+                            sectionNumber: selectedSection
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const aiMessage = {
+                            type: 'ai',
+                            content: data.answer,
+                            source: `${data.sourceBook} - ${data.sourceReference}`,
+                            foundInText: data.foundInText,
+                            timestamp: Date.now()
+                        };
+                        setMessages(prev => [...prev, aiMessage]);
+                        
+                        // TTS automatique pour la réponse
+                        if (isTTSEnabled) {
+                            speak(data.answer);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Erreur recherche:', error);
+                    const errorMessage = { 
+                        type: 'error', 
+                        content: 'Erreur lors de la recherche IA', 
+                        timestamp: Date.now() 
+                    };
+                    setMessages(prev => [...prev, errorMessage]);
+                } finally {
+                    setIsSearching(false);
+                    setUserQuestion('');
+                }
+            };
+
+            // === RECHERCHE AUTOMATIQUE APRÈS RECONNAISSANCE VOCALE ===
+            const searchInTextWithTranscript = async (transcript) => {
+                if (!transcript.trim() || isSearching) return;
+                
+                setIsSearching(true);
+                const newMessage = { type: 'user', content: transcript, timestamp: Date.now() };
+                setMessages(prev => [...prev, newMessage]);
+                
+                try {
+                    const response = await fetch('/api/sefaria-direct/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: transcript,
+                            bookTitle: selectedBook,
+                            sectionNumber: selectedSection
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const aiMessage = {
+                            type: 'ai',
+                            content: data.answer,
+                            source: `${data.sourceBook} - ${data.sourceReference}`,
+                            foundInText: data.foundInText,
+                            timestamp: Date.now()
+                        };
+                        setMessages(prev => [...prev, aiMessage]);
+                        
+                        // TTS automatique pour la réponse vocale
+                        if (isTTSEnabled) {
+                            speak(data.answer);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Erreur recherche vocale:', error);
+                    const errorMessage = { 
+                        type: 'error', 
+                        content: 'Erreur lors de la recherche vocale IA', 
+                        timestamp: Date.now() 
+                    };
+                    setMessages(prev => [...prev, errorMessage]);
+                } finally {
+                    setIsSearching(false);
+                    setUserQuestion('');
+                }
+            };
+
+            // Charger le texte quand livre/section change
+            useEffect(() => {
+                loadSefariaText();
+            }, [selectedBook, selectedSection]);
+
+            return (
+                <div className="min-h-screen bg-spiritual-900 text-white">
+                    {/* HEADER */}
+                    <header className="bg-spiritual-800 border-b border-spiritual-700 p-4">
+                        <div className="max-w-7xl mx-auto">
+                            <h1 className="text-2xl font-bold text-sacred-400 mb-4">
+                                🕊️ Le Compagnon du Cœur - Layout Carrés Trilingue
+                            </h1>
+                            
+                            {/* Sélecteurs et contrôles */}
+                            <div className="flex flex-wrap gap-4 mb-4">
+                                <select
+                                    value={selectedBook}
+                                    onChange={(e) => setSelectedBook(e.target.value)}
+                                    className="px-3 py-2 bg-spiritual-700 border border-spiritual-600 rounded text-white"
+                                >
+                                    {availableBooks.map(book => (
+                                        <option key={book} value={book}>{book}</option>
+                                    ))}
+                                </select>
+                                
+                                <input
+                                    type="number"
+                                    value={selectedSection}
+                                    onChange={(e) => setSelectedSection(e.target.value)}
+                                    min="1"
+                                    max="300"
+                                    className="px-3 py-2 bg-spiritual-700 border border-spiritual-600 rounded text-white w-20"
+                                    placeholder="Section"
+                                />
+                                
+                                <button
+                                    onClick={loadSefariaText}
+                                    disabled={isLoading}
+                                    className="px-4 py-2 bg-sacred-600 hover:bg-sacred-700 disabled:opacity-50 rounded text-white"
+                                >
+                                    {isLoading ? '⏳ Chargement...' : '📖 Charger'}
+                                </button>
+                            </div>
+
+                            {/* Contrôles TTS et traduction */}
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    onClick={translateToFrench}
+                                    disabled={isTranslating || !englishText.length}
+                                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded text-sm"
+                                >
+                                    {isTranslating ? '⏳ Traduction...' : 
+                                     frenchProgress === 0 ? '🇫🇷 Traduire en français' : '🇫🇷 Traduire suite'}
+                                </button>
+                                
+                                {frenchText && frenchProgress < englishText.length && (
+                                    <button
+                                        onClick={continueTranslation}
+                                        disabled={isTranslating}
+                                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded text-sm"
+                                    >
+                                        {isTranslating ? '⏳' : `📖 Suite (${frenchProgress}/${englishText.length})`}
+                                    </button>
+                                )}
+                                
+                                {frenchText && (
+                                    <button
+                                        onClick={() => setShowFrench(!showFrench)}
+                                        className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
+                                    >
+                                        {showFrench ? '👁️ Masquer français' : '👁️ Voir français'}
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={() => setShowEnglish(!showEnglish)}
+                                    className="px-3 py-1 bg-gray-600 hover:bg-gray-700 rounded text-sm"
+                                >
+                                    {showEnglish ? '👁️ Masquer anglais' : '👁️ Voir anglais'}
+                                </button>
+
+                                <button
+                                    onClick={() => speak(hebrewText.slice(0, 2).join(' '), 'he')}
+                                    disabled={isSpeaking || !hebrewText.length}
+                                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded text-sm"
+                                >
+                                    🔊 Hébreu
+                                </button>
+                                
+                                <button
+                                    onClick={() => speak(englishText.slice(0, 2).join(' '), 'en')}
+                                    disabled={isSpeaking || !englishText.length}
+                                    className="px-3 py-1 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 rounded text-sm"
+                                >
+                                    🔊 Anglais
+                                </button>
+
+                                {frenchText && (
+                                    <button
+                                        onClick={() => speak(frenchText.substring(0, 500), 'fr')}
+                                        disabled={isSpeaking}
+                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded text-sm"
+                                    >
+                                        🔊 Français
+                                    </button>
+                                )}
+
+                                {isSpeaking && (
+                                    <button
+                                        onClick={stopSpeaking}
+                                        className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+                                    >
+                                        ⏹️ Arrêter
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={() => setIsTTSEnabled(!isTTSEnabled)}
+                                    className={`px-3 py-1 rounded text-sm ${isTTSEnabled ? 'bg-green-600' : 'bg-gray-600'}`}
+                                >
+                                    {isTTSEnabled ? '🔊 TTS ON' : '🔇 TTS OFF'}
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="max-w-7xl mx-auto p-4">
+                        {isLoading ? (
+                            <div className="text-center py-12">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sacred-400 mx-auto mb-4"></div>
+                                <p>Extraction du texte depuis Sefaria...</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* LAYOUT EN CARRÉS - HÉBREU ET ANGLAIS CÔTE À CÔTE */}
+                                <div className={`grid gap-6 mb-6 ${showEnglish ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
+                                    {/* CARRÉ ANGLAIS */}
+                                    {showEnglish && (
+                                        <div>
+                                            <h3 className="text-xl font-bold mb-4 text-blue-300 border-b border-blue-500 pb-2">
+                                                📖 English Text
+                                            </h3>
+                                            <div className="text-container">
+                                                {englishText.length > 0 ? englishText.map((paragraph, index) => (
+                                                    <p key={index} className="mb-4 text-spiritual-200 leading-relaxed">
+                                                        {paragraph}
+                                                    </p>
+                                                )) : (
+                                                    <p className="text-spiritual-400 italic">English text loading...</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {/* CARRÉ HÉBREU */}
+                                    <div>
+                                        <h3 className="text-xl font-bold mb-4 text-sacred-300 border-b border-sacred-500 pb-2">
+                                            📜 טקסט עברי
+                                        </h3>
+                                        <div className="text-container">
+                                            {hebrewText.length > 0 ? hebrewText.map((paragraph, index) => (
+                                                <p key={index} className="mb-4 text-spiritual-200 leading-relaxed text-right hebrew-text rtl-text">
+                                                    {paragraph}
+                                                </p>
+                                            )) : (
+                                                <p className="text-spiritual-400 italic text-right">טקסט עברי בטעינה...</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* CARRÉ FRANÇAIS LAZY EN BAS - DÉFILABLE */}
+                                {showFrench && frenchText && (
+                                    <div className="mb-6 fade-in">
+                                        <h3 className="text-xl font-bold mb-4 text-green-300 border-b border-green-500 pb-2">
+                                            🇫🇷 Traduction Française
+                                        </h3>
+                                        <div className="text-container french-container">
+                                            <div className="text-spiritual-200 leading-relaxed whitespace-pre-wrap">
+                                                {frenchText}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ZONE RECHERCHE IA */}
+                                <div className="mt-8">
+                                    <h3 className="text-xl font-bold mb-4 text-sacred-300 border-b border-sacred-500 pb-2">
+                                        🤖 Recherche IA dans le Texte
+                                    </h3>
+                                    
+                                    {/* Messages de conversation */}
+                                    <div className="bg-spiritual-800/40 rounded-lg p-4 mb-4 max-h-60 overflow-y-auto">
+                                        {messages.length === 0 ? (
+                                            <p className="text-spiritual-400 italic text-center">
+                                                Posez votre question sur ce texte...
+                                            </p>
+                                        ) : (
+                                            messages.map((msg, idx) => (
+                                                <div key={idx} className={`mb-3 p-3 rounded ${
+                                                    msg.type === 'user' ? 'bg-blue-600/20 border-l-2 border-blue-400' :
+                                                    msg.type === 'ai' ? 'bg-green-600/20 border-l-2 border-green-400' :
+                                                    'bg-red-600/20 border-l-2 border-red-400'
+                                                }`}>
+                                                    <div className="text-sm text-spiritual-300 mb-1">
+                                                        {msg.type === 'user' ? '👤 Vous' : 
+                                                         msg.type === 'ai' ? '🤖 Guide Spirituel' : '⚠️ Erreur'}
+                                                    </div>
+                                                    <div className="text-spiritual-100">{msg.content}</div>
+                                                    {msg.source && (
+                                                        <div className="text-xs text-spiritual-400 mt-1">
+                                                            📚 Source: {msg.source}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                    
+                                    {/* Input recherche */}
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={userQuestion}
+                                            onChange={(e) => setUserQuestion(e.target.value)}
+                                            placeholder="Posez votre question sur ce texte..."
+                                            className="flex-1 px-4 py-3 bg-spiritual-700 border border-spiritual-600 rounded text-white"
+                                            onKeyPress={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    searchInText();
+                                                }
+                                            }}
+                                        />
+                                        
+                                        <button
+                                            onClick={searchInText}
+                                            disabled={isSearching || !userQuestion.trim()}
+                                            className="px-6 py-3 bg-sacred-600 hover:bg-sacred-700 disabled:opacity-50 rounded text-white"
+                                        >
+                                            {isSearching ? '⏳' : '🔍 Rechercher'}
+                                        </button>
+                                        
+                                        <button
+                                            onClick={startListening}
+                                            disabled={isListening}
+                                            className={`px-4 py-3 rounded text-white ${
+                                                isListening ? 'bg-red-600 animate-pulse' : 'bg-purple-600 hover:bg-purple-700'
+                                            }`}
+                                        >
+                                            {isListening ? '🔴 Écoute...' : '🎤'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Rendu de l'application
+        ReactDOM.render(<CarreTrilingueApp />, document.getElementById('carre-trilingue-app'));
+    </script>
 </body>
 </html>
