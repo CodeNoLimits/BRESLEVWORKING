@@ -76,6 +76,80 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// 🚀 ENDPOINT UNIFIÉ - Interface 13+ Livres
+app.get('/api/v2/books', async (req, res) => {
+  try {
+    // Accéder directement au multiBookProcessor
+    const { multiBookProcessor } = await import('./services/multiBookProcessor.js');
+    await multiBookProcessor.initialize();
+    const books = multiBookProcessor.getAvailableBooks();
+    
+    // Mapping des livres requis avec leurs titres français réels
+    const REQUIRED_BOOKS_MAP = {
+      'Likutei Moharan': ['Les Enseignements de Rabbi Nahman'],
+      'Likutei Moharan Tinyana': ['Les Enseignements de Rabbi Nahman - Tome 2'], 
+      'Likutei Tefilot': ['Recueil de Prières'],
+      'Likutei Etzot': ['Recueil de Conseils'],
+      'Kitzur Likutei Moharan': ['Abrégé des Enseignements'],
+      'Chayey Moharan': ['Chayei Moharan', 'La Vie de Rabbi Nahman'],
+      'Sefer HaMiddot': ['Le Livre des Traits de Caractère'],
+      'Sipurey Maasiyot': ['Les Contes de Rabbi Nahman'],
+      'Shivchey HaRan': ['Les Louanges de Rabbi Nahman'],
+      'Alim LiTerufah': ['Feuilles de Guérison'],
+      'Hashtefachut HaNefesh': ['Épanchement de l\'Âme'],
+      'Shmot HaTzadikim': ['Les Noms des Justes']
+    };
+    
+    // Vérification de complétude - Algorithme basé sur mapping réel
+    const bookTitles = books.map(b => b.titleFrench || b.title);
+    console.log(`[API-V2] ${bookTitles.length} titres disponibles`);
+    
+    const foundBooks = Object.keys(REQUIRED_BOOKS_MAP).filter(required => {
+      const possibleTitles = REQUIRED_BOOKS_MAP[required];
+      const found = possibleTitles.some(possibleTitle => 
+        bookTitles.some(actualTitle => 
+          actualTitle.toLowerCase().includes(possibleTitle.toLowerCase())
+        )
+      );
+      if (found) {
+        console.log(`[API-V2] ✅ Trouvé: ${required}`);
+      } else {
+        console.log(`[API-V2] ❌ Manque: ${required} (cherche: ${possibleTitles.join(' ou ')})`);
+      }
+      return found;
+    });
+    
+    console.log(`[API-V2] ${books.length} livres trouvés, ${foundBooks.length}/13 requis`);
+    
+    res.json({
+      success: true,
+      count: books.length,
+      books: books,
+      requiredBooks: Object.keys(REQUIRED_BOOKS_MAP),
+      foundRequiredBooks: foundBooks,
+      completeness: `${foundBooks.length}/${Object.keys(REQUIRED_BOOKS_MAP).length}`,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('[API-V2] Erreur:', error);
+    
+    const FALLBACK_BOOKS = [
+      'Likutei Moharan', 'Likutei Moharan Tinyana', 'Likutei Tefilot',
+      'Likutei Etzot', 'Kitzur Likutei Moharan', 'Chayey Moharan',
+      'Sefer HaMiddot', 'Sipurey Maasiyot', 'Shivchey HaRan',
+      'Alim LiTerufah', 'Hashtefachut HaNefesh', 'Shmot HaTzadikim'
+    ];
+    
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      fallbackBooks: FALLBACK_BOOKS,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // === ACTIVATION ROUTES CHAYEI MOHARAN DU 3 JUILLET ===
 console.log('📚 Activation des routes Chayei Moharan & Multi-Livres...');
 try {

@@ -323,33 +323,53 @@ Instructions:
   private buildGeminiContext(query: string, bookResults: any[], allChunks: BookChunk[]): string {
     const hasHebrewChunks = allChunks.some(chunk => chunk.isRTL);
     
+    // Identifier le livre principal si recherche dans un livre spécifique
+    const primaryBook = bookResults.length === 1 ? bookResults[0] : null;
+    const primaryBookChunks = primaryBook ? allChunks.filter(chunk => chunk.bookId === primaryBook.bookId) : [];
+    const otherChunks = primaryBook ? allChunks.filter(chunk => chunk.bookId !== primaryBook.bookId) : allChunks;
+    
     return `Tu es un compagnon spirituel expert des textes de Rabbi Nahman de Breslov.
 
 CONTEXTE IMPORTANT:
 - Tu as accès à des textes en hébreu et en français
 - Les textes hébreux peuvent contenir des informations cruciales
 - Tu dois utiliser tes connaissances des œuvres de Rabbi Nahman pour compléter l'information
+${primaryBook ? `\n- LIVRE PRINCIPAL SÉLECTIONNÉ: ${primaryBook.bookTitle} - Réponds prioritairement dans ce contexte` : ''}
 
 LIVRES CONSULTÉS:
-${bookResults.map(result => `- ${result.bookTitle}: ${result.foundInBook ? `${result.relevantChunks.length} passages trouvés` : 'Aucun passage trouvé'}`).join('\n')}
+${bookResults.map(result => `- ${result.bookTitle}: ${result.foundInBook ? `${result.relevantChunks.length} passages trouvés` : 'Aucun passage trouvé'}${result.bookId === primaryBook?.bookId ? ' ⭐ LIVRE PRINCIPAL' : ''}`).join('\n')}
 
-TOUS LES PASSAGES TROUVÉS (${allChunks.length} au total):
-${allChunks.length > 0 ? 
-  allChunks.map((chunk, index) => {
-    const book = this.books.get(chunk.bookId);
-    return `
-[SOURCE ${index + 1}] ${book?.titleFrench} - Lignes ${chunk.startLine}-${chunk.endLine}:
+${primaryBook && primaryBookChunks.length > 0 ? 
+`PASSAGES DU LIVRE PRINCIPAL (${primaryBook.bookTitle}) - ${primaryBookChunks.length} passages:
+${primaryBookChunks.map((chunk, index) => {
+  return `[${primaryBook.bookTitle} - ${index + 1}] Lignes ${chunk.startLine}-${chunk.endLine}:
 ${chunk.content}
 `;
-  }).join('\n') :
-  'Aucun passage directement trouvé - utilise tes connaissances pour répondre.'
-}
+}).join('\n')}
+` : ''}
+
+${otherChunks.length > 0 ? 
+`AUTRES PASSAGES TROUVÉS (${otherChunks.length} au total):
+${otherChunks.map((chunk, index) => {
+  const book = this.books.get(chunk.bookId);
+  return `[AUTRE SOURCE ${index + 1}] ${book?.titleFrench} - Lignes ${chunk.startLine}-${chunk.endLine}:
+${chunk.content}
+`;
+}).join('\n')}
+` : ''}
+
+${allChunks.length === 0 ? 'Aucun passage directement trouvé - utilise tes connaissances pour répondre.' : ''}
 
 QUESTION: ${query}
 
 INSTRUCTIONS STRICTES:
 
-1. RÉPONSE COMPLÈTE ET DÉTAILLÉE:
+${primaryBook ? `0. PRIORITÉ LIVRE PRINCIPAL:
+   - Cette question concerne prioritairement ${primaryBook.bookTitle}
+   - Centre ta réponse sur ce livre même si d'autres sources sont disponibles
+   - Mentionne explicitement "${primaryBook.bookTitle}" dans ta réponse
+
+` : ''}1. RÉPONSE COMPLÈTE ET DÉTAILLÉE:
    - Donne TOUTES les informations pertinentes trouvées
    - Si tu connais d'autres références pertinentes, mentionne-les
    - Pour Lemberg: date précise (5568/1807), raison du voyage, enseignements donnés

@@ -80,6 +80,30 @@ export const HEBREW_BOOKS_CONFIG = [
     titleHebrew: 'קיצור ליקוטי מוהרן תנינא',
     filename: 'קיצור ליקוטי מוהרן תנינא_1751481234339.docx',
     language: 'hebrew' as const
+  },
+  {
+    id: 'hitbodedut_nefesh',
+    title: 'Hashtefachut HaNefesh',
+    titleFrench: 'Épanchement de l\'Âme et Méditation',
+    titleHebrew: 'השתפכות הנפש ומשיבת נפש',
+    filename: 'השתפכות הנפש ומשיבת נפש_1751481234337.docx',
+    language: 'hebrew' as const
+  },
+  {
+    id: 'alim_literufah',
+    title: 'Alim LiTerufah',
+    titleFrench: 'Feuilles de Guérison',
+    titleHebrew: 'עלים לתרופה',
+    filename: 'עלים לתרופה_1751481234339.docx',
+    language: 'hebrew' as const
+  },
+  {
+    id: 'shmot_hatzadikim',
+    title: 'Shmot HaTzadikim',
+    titleFrench: 'Les Noms des Justes',
+    titleHebrew: 'שמות הצדיקים',
+    filename: 'שמות הצדיקים_1751481234339.docx',
+    language: 'hebrew' as const
   }
 ];
 

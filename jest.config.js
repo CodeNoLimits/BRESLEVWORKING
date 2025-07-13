@@ -1,5 +1,15 @@
-module.exports = {
+export default {
   testEnvironment: 'node',
+  preset: 'ts-jest/presets/default-esm',
+  extensionsToTreatAsEsm: ['.ts'],
+  globals: {
+    'ts-jest': {
+      useESM: true
+    }
+  },
+  moduleNameMapping: {
+    '^(\\.{1,2}/.*)\\.js$': '$1'
+  },
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'server/**/*.{js,ts}',
@@ -11,7 +21,7 @@ module.exports = {
     '**/__tests__/**/*.{js,ts}',
   ],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', { useESM: true }],
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
   testTimeout: 30000, // 30 secondes pour les tests d'API
