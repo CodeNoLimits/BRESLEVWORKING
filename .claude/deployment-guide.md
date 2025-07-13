@@ -79,7 +79,82 @@ python -m http.server 8080
 npx serve .
 ```
 
-## ☁️ Déploiement Replit (Production)
+## 🚀 Déploiement Production - Phase 3
+
+### 🎯 Architecture de déploiement
+- **Frontend** : Vercel (ou Netlify) - Plan gratuit
+- **Backend** : Render.com - Plan gratuit  
+- **Base de données** : Fichiers statiques + Cache mémoire
+- **CDN** : Inclus avec Vercel/Netlify
+
+## ☁️ Déploiement Vercel (Frontend) - RECOMMANDÉ
+
+### 1. Préparation Vercel
+
+#### Installation Vercel CLI
+```bash
+npm i -g vercel
+vercel login
+```
+
+#### Configuration vercel.json
+Le fichier `vercel.json` est déjà configuré avec :
+- Proxy automatique vers Render backend
+- Headers CORS
+- Routing SPA
+- Cache optimisé
+
+#### Déploiement
+```bash
+# Depuis le dossier racine
+vercel --prod
+
+# Ou via GitHub (recommandé)
+# 1. Connecter le repo sur vercel.com
+# 2. Auto-deploy à chaque push
+```
+
+### 2. Variables d'environnement Vercel
+Dans le dashboard Vercel :
+```
+NEXT_PUBLIC_API_URL = https://breslov-api.onrender.com
+NEXT_PUBLIC_APP_NAME = Le Compagnon du Cœur
+NODE_ENV = production
+```
+
+## 🔧 Déploiement Render (Backend)
+
+### 1. Configuration automatique
+Le fichier `render.yaml` configure :
+- Service web Node.js
+- Auto-deploy depuis GitHub
+- Variables d'environnement
+- Health checks
+- CORS headers
+
+### 2. Déploiement Render
+```bash
+# 1. Connecter GitHub repo sur render.com
+# 2. Utiliser render.yaml (infrastructure as code)
+# 3. Configure les secrets :
+GEMINI_API_KEY = AIzaSyDijKuxkFV06PVCVz7QIYrcZa47kGUO_Ws
+JWT_SECRET = auto-généré
+```
+
+### 3. URL de production
+- **Frontend** : https://le-compagnon-du-coeur.vercel.app
+- **Backend** : https://breslov-api.onrender.com
+
+## 🌐 Alternative : Déploiement Netlify
+
+### Configuration netlify.toml
+```bash
+# Connecter repo GitHub sur netlify.com
+# Le fichier netlify.toml est déjà configuré
+# Deploy automatique à chaque push
+```
+
+## ☁️ Déploiement Replit (Backup)
 
 ### 1. Configuration Replit
 

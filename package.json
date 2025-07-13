@@ -1,15 +1,23 @@
 {
   "name": "breslevworking-frontend",
-  "version": "1.0.0",
-  "description": "Breslev Torah Frontend with Proxy",
-  "main": "simple-server.js",
+  "version": "2.0.0",
+  "description": "Le Compagnon du Cœur - Application spirituelle Breslov",
+  "main": "server.js",
   "scripts": {
-    "start": "node simple-server.js",
-    "dev": "node simple-server.js",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "npm install --production",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --watchAll=false"
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "deploy:vercel": "vercel --prod",
+    "deploy:render": "echo 'Deploy via GitHub integration'",
+    "health": "curl -f http://localhost:5000/api/health || exit 1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -27,5 +35,22 @@
     "jest": "^30.0.4",
     "supertest": "^7.1.3",
     "ts-jest": "^29.4.0"
-  }
+  },
+  "keywords": [
+    "breslov",
+    "rabbi-nachman",
+    "spiritual",
+    "torah",
+    "french",
+    "hebrew",
+    "spirituality",
+    "meditation"
+  ],
+  "author": "CodeNoLimits",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CodeNoLimits/BRESLEVWORKING.git"
+  },
+  "homepage": "https://le-compagnon-du-coeur.vercel.app"
 }

@@ -1,0 +1,70 @@
+# 🚀 Configuration Render.com pour Le Compagnon du Cœur
+
+services:
+  # Backend API Service
+  - type: web
+    name: breslov-api
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    
+    # Environment Variables
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: GEMINI_API_KEY
+        fromGroup: breslov-secrets
+      - key: LOG_LEVEL
+        value: info
+      - key: RATE_LIMIT_MAX
+        value: 100
+      - key: CORS_ORIGIN
+        value: https://le-compagnon-du-coeur.vercel.app
+    
+    # Health Check
+    healthCheckPath: /api/health
+    
+    # Auto-deploy from GitHub
+    repo: https://github.com/CodeNoLimits/BRESLEVWORKING.git
+    branch: main
+    rootDir: ./
+    
+    # Scaling (free tier)
+    numInstances: 1
+    
+    # Build Settings
+    buildFilter:
+      paths:
+        - server.js
+        - package.json
+        - package-lock.json
+        - logs/**
+    
+    # Headers for CORS
+    headers:
+      - path: /api/*
+        name: Access-Control-Allow-Origin
+        value: "*"
+      - path: /api/*
+        name: Access-Control-Allow-Methods
+        value: "GET, POST, PUT, DELETE, OPTIONS"
+
+databases:
+  # Redis pour le cache (optionnel sur plan gratuit)
+  # - name: breslov-redis
+  #   plan: free
+  #   type: redis
+
+# Secrets Environment Group
+envVarGroups:
+  - name: breslov-secrets
+    envVars:
+      - key: GEMINI_API_KEY
+        value: AIzaSyDijKuxkFV06PVCVz7QIYrcZa47kGUO_Ws
+      - key: JWT_SECRET
+        generateValue: true
+      - key: HEALTH_CHECK_SECRET
+        value: breslov_health_2025
